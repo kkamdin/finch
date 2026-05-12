@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import FileBrowserPresenter, { type CardInfo, type DirectoryListing } from './FileBrowserPresenter'
+import FileBrowserView, { type CardInfo, type DirectoryListing } from './FileBrowserView'
 
 // Navigation root vs. rootLabel — why they're different things:
 //
@@ -30,6 +30,21 @@ export type FileBrowserProps = {
   showIcon?: boolean
 }
 
+/**
+ * The batteries-included file browser. You supply three async callbacks;
+ * this component handles everything else — navigation state, lazy card-info
+ * fetching (via IntersectionObserver so only visible cards are fetched),
+ * and active-file tracking.
+ *
+ * In MVC terms this is the **C** (controller): it coordinates between your
+ * data layer (`listDirectory`, `getCardInfo`) and the View (`FileBrowserView`).
+ * In the React "presenter/container split", this is the container.
+ *
+ * **This is the component most apps should import.**
+ *
+ * If you need to own the navigation state yourself (e.g. to sync it with the
+ * URL or a shared store), use `FileBrowserView` directly instead.
+ */
 export default function FileBrowser({
   listDirectory, getCardInfo, onLoadFile,
   rootLabel = 'root', showIcon = true,
@@ -70,7 +85,7 @@ export default function FileBrowser({
     cardInfoFetchedRef.current = new Set()
   }, [path])
 
-  async function navigate(subpath: string) {
+  const navigate = useCallback(async (subpath: string) => {
     setNavigating(true)
     setNavError(null)
     try {
@@ -82,9 +97,9 @@ export default function FileBrowser({
     } finally {
       setNavigating(false)
     }
-  }
+  }, [listDirectory])
 
-  useEffect(() => { navigate('') }, [])
+  useEffect(() => { navigate('') }, [navigate])
 
   function handleFileClick(filename: string) {
     const fullPath = path ? `${path}/${filename}` : filename
@@ -93,7 +108,7 @@ export default function FileBrowser({
   }
 
   return (
-    <FileBrowserPresenter
+    <FileBrowserView
       path={path}
       listing={listing}
       navigating={navigating}

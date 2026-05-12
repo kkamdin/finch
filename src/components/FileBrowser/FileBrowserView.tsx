@@ -19,7 +19,7 @@ export type DirectoryListing = {
   files: FileEntry[]
 }
 
-export type FileBrowserPresenterProps = {
+export type FileBrowserViewProps = {
   path: string
   listing: DirectoryListing | null
   navigating: boolean
@@ -38,11 +38,40 @@ export type FileBrowserPresenterProps = {
   observeCard: (node: HTMLLIElement | null) => void
 }
 
-export default function FileBrowserPresenter({
+/**
+ * The **View** layer of the file browser — it renders whatever state you pass
+ * in and has no logic of its own. Every piece of state (current path, directory
+ * listing, card metadata, loading/error status) is a prop; the caller decides
+ * what to show and when.
+ *
+ * In MVC terms this is the **V**: it knows nothing about where data comes from
+ * or how navigation state is stored. If you're familiar with the React
+ * "presenter/container split" (also called "smart vs. dumb components"), this
+ * is the presenter — the container is `FileBrowser`.
+ *
+ * ---
+ *
+ * **Which component should I import?**
+ *
+ * - **`FileBrowser`** — the right choice for most apps. It wraps `FileBrowserView`
+ *   and manages navigation state, lazy card-info fetching via IntersectionObserver,
+ *   and active-file tracking automatically. You supply three callbacks and it does
+ *   the rest.
+ *
+ * - **`FileBrowserView`** — use this when you need to own the state yourself:
+ *   syncing navigation to the URL (React Router), holding state in a shared store
+ *   (Redux, Zustand, Jotai), server-rendering a pre-fetched listing, or testing
+ *   rendering in isolation by passing data directly as props.
+ *
+ * The `filterFn` prop is only available on `FileBrowserView`. It lets the
+ * consuming app apply an external predicate on top of the built-in text and
+ * tag filters without reimplementing the filter bar.
+ */
+export default function FileBrowserView({
   path, listing, navigating, navError, activeFile, cardInfo,
   rootLabel = 'root', showIcon = true, filterFn,
   onNavigate, onFileClick, observeCard,
-}: FileBrowserPresenterProps) {
+}: FileBrowserViewProps) {
   const parts = path ? path.split('/').filter(Boolean) : []
 
   const [textFilter, setTextFilter] = useState('')

@@ -1,14 +1,14 @@
 import './components/style.css';
 
 //COMPONENTS
-export { default as FileBrowser } from './components/FileBrowser';
-export type { FileBrowserProps } from './components/FileBrowser';
+export { default as FileBrowser } from './components/FileBrowser/FileBrowser';
+export type { FileBrowserProps } from './components/FileBrowser/FileBrowser';
 
-export { default as FileBrowserPresenter } from './components/FileBrowserPresenter';
-export type { FileBrowserPresenterProps, DirectoryListing, FileEntry, CardInfo } from './components/FileBrowserPresenter';
+export { default as FileBrowserView } from './components/FileBrowser/FileBrowserView';
+export type { FileBrowserViewProps, DirectoryListing, FileEntry, CardInfo } from './components/FileBrowser/FileBrowserView';
 
-export { default as FileCard } from './components/FileCard';
-export type { FileCardProps } from './components/FileCard';
+export { default as FileCard } from './components/FileBrowser/FileCard';
+export type { FileCardProps } from './components/FileBrowser/FileCard';
 
 export { default as Button } from './components/Button';
 export type { ButtonProps } from './components/Button';
