@@ -37,7 +37,14 @@ export type FileBrowserViewProps = {
   navigating: boolean
   /** Error message to display, or null if there is no error. */
   navError: string | null
-  /** Full relative path of the currently selected file, or null. */
+  /**
+   * Full relative path of the currently selected file, or null.
+   *
+   * This intentionally persists across directory navigation — the highlighted
+   * card represents the file currently loaded in the viewer, which stays loaded
+   * until the user explicitly opens a different file. Navigating into a
+   * subdirectory does not clear it.
+   */
   activeFile: string | null
   /** Map of file path → card metadata (tag, subtitle, detail, thumbnail). */
   cardInfo: Record<string, CardInfo>
@@ -48,7 +55,17 @@ export type FileBrowserViewProps = {
   showIcon?: boolean
   /** Size of the icon/thumbnail slot on all cards: 'sm' (32 px), 'md' (48 × 48 px, default), 'lg' (64 px). */
   iconSize?: IconSize
-  /** Optional external filter applied before the built-in text and tag filters. */
+  /**
+   * Optional external predicate applied before the built-in text and tag filters.
+   *
+   * This prop exists only on `FileBrowserView`, not on `FileBrowser`. When using
+   * `FileBrowser`, filtering should happen in the backend — pass a narrowed
+   * `listDirectory` implementation rather than filtering on the frontend.
+   * `filterFn` is provided here as an escape hatch for cases where the caller
+   * owns the navigation state directly and needs to apply an in-memory predicate
+   * without reimplementing the filter bar (e.g. role-based visibility, hiding
+   * files by type).
+   */
   filterFn?: (file: FileEntry) => boolean
   /** Called with the target subpath when the user navigates into a directory. */
   onNavigate: (subpath: string) => void

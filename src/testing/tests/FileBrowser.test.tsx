@@ -223,4 +223,43 @@ describe('FileBrowser', () => {
     await waitFor(() => expect(props.getCardInfo).toHaveBeenCalled())
     // No assertion needed beyond "didn't throw" — the component stays functional
   })
+
+  it('ignores a stale navigation result when a newer navigation completes first', async () => {
+    const rootListingWithDir: DirectoryListing = { directories: ['dir-a'], files: [] }
+    const listingA: DirectoryListing = {
+      directories: [],
+      files: [{ name: 'file-in-a.h5', cardInfoAvailable: false }],
+    }
+
+    let resolveA!: (v: DirectoryListing) => void
+    let resolveRootAgain!: (v: DirectoryListing) => void
+    const promiseA = new Promise<DirectoryListing>(res => { resolveA = res })
+    const promiseRootAgain = new Promise<DirectoryListing>(res => { resolveRootAgain = res })
+
+    const props = makeProps({
+      listDirectory: vi.fn()
+        .mockResolvedValueOnce(rootListingWithDir) // mount: navigate('') — resolves immediately
+        .mockReturnValueOnce(promiseA)             // navigate('dir-a') — stale, seq=2
+        .mockReturnValueOnce(promiseRootAgain),    // navigate('') via breadcrumb — newest, seq=3
+    })
+
+    render(<FileBrowser {...props} rootLabel="root" />)
+    await waitFor(() => expect(screen.getByText('dir-a')).toBeInTheDocument())
+
+    // Start two navigations in quick succession — the breadcrumb root button is
+    // always rendered so it's clickable even while navigating=true.
+    fireEvent.click(screen.getByText('dir-a'))
+    fireEvent.click(screen.getByText('root'))
+
+    // Resolve the newer navigation (seq=3) first — it should commit.
+    resolveRootAgain(rootListingWithDir)
+    await waitFor(() => expect(screen.getByText('dir-a')).toBeInTheDocument())
+
+    // Resolve the stale navigation (seq=2) — should be a no-op.
+    resolveA(listingA)
+    await new Promise(r => setTimeout(r, 10))
+
+    expect(screen.queryByText('file-in-a.h5')).not.toBeInTheDocument()
+    expect(screen.getByText('dir-a')).toBeInTheDocument()
+  })
 })

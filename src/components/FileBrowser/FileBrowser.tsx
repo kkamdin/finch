@@ -75,6 +75,12 @@ export type FileBrowserProps = {
  *
  * If you need to own the navigation state yourself (e.g. to sync it with the
  * URL or a shared store), use `FileBrowserView` directly instead.
+ *
+ * **Filtering:** this component intentionally has no `filterFn` prop. Filtering
+ * should be handled by the backend — pass a `listDirectory` implementation that
+ * only returns the files the current user should see. `filterFn` is available on
+ * `FileBrowserView` as an escape hatch for callers who own state themselves and
+ * need in-memory filtering without reimplementing the filter bar.
  */
 export default function FileBrowser({
   listDirectory, getCardInfo, onLoadFile, onCardInfoError,
@@ -89,6 +95,7 @@ export default function FileBrowser({
 
   const cardObserverRef = useRef<IntersectionObserver | null>(null)
   const cardInfoFetchedRef = useRef<Set<string>>(new Set())
+  const navSeqRef = useRef(0)
 
   useEffect(() => {
     cardObserverRef.current = new IntersectionObserver(entries => {
@@ -121,16 +128,19 @@ export default function FileBrowser({
   }, [path])
 
   const navigate = useCallback(async (subpath: string) => {
+    const seq = ++navSeqRef.current
     setNavigating(true)
     setNavError(null)
     try {
       const result = await listDirectory(subpath)
+      if (seq !== navSeqRef.current) return
       setListing(result)
       setPath(subpath)
     } catch (e) {
+      if (seq !== navSeqRef.current) return
       setNavError(e instanceof Error ? e.message : String(e))
     } finally {
-      setNavigating(false)
+      if (seq === navSeqRef.current) setNavigating(false)
     }
   }, [listDirectory])
 
