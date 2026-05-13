@@ -33,7 +33,9 @@ export type FileCardProps = {
    * sets `aria-pressed` on the button — omit entirely for non-selectable cards.
    */
   isActive?: boolean
+  /** Callback fired when the card is clicked. */
   onClick?: () => void
+  /** Additional Tailwind classes applied to the root button element. */
   className?: string
 }
 
@@ -61,17 +63,6 @@ const iconPixelSizes: Record<IconSize, number> = {
 
 /**
  * A single file entry card in the file browser.
- *
- * @param filename - The filename shown as the primary label.
- * @param tag - Optional short tag rendered as a pill badge.
- * @param subtitle - Optional first secondary text line beneath the filename.
- * @param detail - Optional second secondary text line, rendered in monospace.
- * @param thumbnail - Thumbnail URL (string), gray placeholder (null), or generic icon (undefined).
- * @param showIcon - When false, hides the left icon/thumbnail slot. Defaults to true.
- * @param iconSize - Size of the icon/thumbnail slot: 'sm' (32 px), 'md' (48 px), 'lg' (64 px). Defaults to 'md'.
- * @param isActive - Marks this card as the currently selected file; sets aria-pressed.
- * @param onClick - Callback fired when the card is clicked.
- * @param className - Additional Tailwind classes applied to the root button element.
  */
 export default function FileCard({
   filename, tag, subtitle, detail, thumbnail,

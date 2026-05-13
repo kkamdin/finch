@@ -27,23 +27,32 @@ const folderIconPixelSizes: Record<IconSize, number> = {
 }
 
 export type FileBrowserViewProps = {
+  /** The current directory subpath. Empty string means root. */
   path: string
+  /** The directory contents to render, or null while loading. */
   listing: DirectoryListing | null
+  /** When true, shows a loading indicator in place of the listing. */
   navigating: boolean
+  /** Error message to display, or null if there is no error. */
   navError: string | null
+  /** Full relative path of the currently selected file, or null. */
   activeFile: string | null
+  /** Map of file path → card metadata (tag, subtitle, detail, thumbnail). */
   cardInfo: Record<string, CardInfo>
   /** Display label for the breadcrumb home button. Has no effect on where navigation starts —
    *  the actual root directory is a backend concern. Defaults to 'root'. */
   rootLabel?: string
   /** When false, hides the icon/thumbnail slot on all cards for a compact layout. Defaults to true. */
   showIcon?: boolean
-  /** Size of the icon/thumbnail slot on all cards. Defaults to 'md' (48 × 48 px). */
+  /** Size of the icon/thumbnail slot on all cards: 'sm' (32 px), 'md' (48 × 48 px, default), 'lg' (64 px). */
   iconSize?: IconSize
   /** Optional external filter applied before the built-in text and tag filters. */
   filterFn?: (file: FileEntry) => boolean
+  /** Called with the target subpath when the user navigates into a directory. */
   onNavigate: (subpath: string) => void
+  /** Called with the filename when the user clicks a file card. */
   onFileClick: (name: string) => void
+  /** Ref callback to attach the IntersectionObserver to each observable card element. */
   observeCard: (node: HTMLLIElement | null) => void
   /** Additional Tailwind classes applied to the root container. Use to override the default width. */
   className?: string
@@ -78,20 +87,6 @@ export type FileBrowserViewProps = {
  * consuming app apply an external predicate on top of the built-in text and
  * tag filters without reimplementing the filter bar.
  *
- * @param path - The current directory subpath. Empty string means root.
- * @param listing - The directory contents to render, or null while loading.
- * @param navigating - When true, shows a loading indicator in place of the listing.
- * @param navError - Error message to display, or null if there is no error.
- * @param activeFile - Full relative path of the currently selected file, or null.
- * @param cardInfo - Map of file path → card metadata (tag, subtitle, detail, thumbnail).
- * @param rootLabel - Display label for the breadcrumb home button. Defaults to 'root'.
- * @param showIcon - When false, hides icon/thumbnail slots for a compact layout. Defaults to true.
- * @param iconSize - Size of the icon/thumbnail slot: 'sm' (32 px), 'md' (48 px), 'lg' (64 px). Defaults to 'md'.
- * @param filterFn - Optional external predicate applied before the built-in text and tag filters.
- * @param onNavigate - Called with the target subpath when the user navigates into a directory.
- * @param onFileClick - Called with the filename when the user clicks a file card.
- * @param observeCard - Ref callback to attach the IntersectionObserver to each observable card element.
- * @param className - Additional Tailwind classes applied to the root container.
  */
 export default function FileBrowserView({
   path, listing, navigating, navError, activeFile, cardInfo,

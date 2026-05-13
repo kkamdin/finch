@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import FileCard from '../components/FileBrowser/FileCard';
 
-// Inline SVG placeholder — no external request needed
+// for display example placeholder
 const fakeThumbnail =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E" +
   "%3Crect width='48' height='48' fill='%230369a1'/%3E" +
@@ -13,51 +13,6 @@ const meta = {
   component: FileCard,
   parameters: {
     layout: 'centered',
-    docs: {
-      description: {
-        component: `
-A single row in the file browser. The \`thumbnail\` prop has three distinct states
-that let the caller communicate different situations with the same slot:
-
-| Value | What renders | When to use |
-|---|---|---|
-| omitted / \`undefined\` | Generic file icon | Thumbnails are not in use for this file type |
-| \`null\` | Empty gray square | Backend returned null (thumbnail unavailable or error) |
-| A URL string \`"https://…"\` | The image | Your backend exposes a dedicated image endpoint and returns its URL |
-| A base64 string \`"data:image/png;base64,…"\` | The image | Your backend returns raw image bytes (e.g. PNG); your \`getCardInfo\` encodes them before passing here |
-
-The \`null\` vs \`undefined\` distinction matters: \`null\` means the backend tried to
-produce a thumbnail but couldn't (file not found, unsupported format, backend error, etc.)
-and no image will ever arrive. \`undefined\` means thumbnails are not part of the design for
-these files at all, so a generic file icon is shown instead.
-
-The image is displayed in a fixed 48 × 48 px box and cropped to fit — original image
-dimensions don't matter.
-
-**If your backend returns raw image bytes** (e.g. PNG bytes over a REST API), you cannot
-pass them directly. Your \`getCardInfo\` function must encode them into a base64 data URI
-string first. In JavaScript that looks like:
-
-\`\`\`ts
-// response.data is a Uint8Array / ArrayBuffer of PNG bytes from your backend
-const base64 = btoa(String.fromCharCode(...new Uint8Array(response.data)));
-const thumbnail = \`data:image/png;base64,\${base64}\`;
-\`\`\`
-
-Or with axios (set \`responseType: 'arraybuffer'\` on the request):
-
-\`\`\`ts
-const response = await axios.get('/thumbnail/scan_001.h5', { responseType: 'arraybuffer' });
-const base64 = btoa(String.fromCharCode(...new Uint8Array(response.data)));
-return { thumbnail: \`data:image/png;base64,\${base64}\` };
-\`\`\`
-
-**Note:** the gray placeholder also appears transiently while \`getCardInfo\` is still
-in flight — before the promise resolves, \`FileBrowserView\` coerces the not-yet-loaded
-value to \`null\` internally. This is a brief loading flicker, not a permanent state.
-        `,
-      },
-    },
   },
   tags: ['autodocs'],
 } satisfies Meta<typeof FileCard>;

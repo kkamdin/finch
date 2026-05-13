@@ -6,7 +6,9 @@ import type { DirectoryListing, CardInfo } from '../components/FileBrowser/FileB
 const meta = {
   title: 'FileBrowser/FileBrowser',
   component: FileBrowser,
-  parameters: { layout: 'padded' },
+  parameters: {
+    layout: 'padded',
+  },
   tags: ['autodocs'],
 } satisfies Meta<typeof FileBrowser>;
 
@@ -72,6 +74,20 @@ async function mockListDirectory(subpath: string): Promise<DirectoryListing> {
 async function mockGetCardInfo(subpath: string): Promise<CardInfo> {
   await new Promise(r => setTimeout(r, 300))
   return CARD_INFO[subpath] ?? {}
+}
+
+const THUMBNAILS: Record<string, string> = {
+  '2024-01/scan_001.h5':              fakeThumbnail(200),
+  '2024-01/scan_002.h5':              fakeThumbnail(260),
+  '2024-01/dark_field.h5':            fakeThumbnail(30),
+  '2024-01/energy-scan/escan_001.h5': fakeThumbnail(160),
+  '2024-01/energy-scan/escan_002.h5': fakeThumbnail(140),
+  '2024-02/scan_010.h5':              fakeThumbnail(300),
+}
+
+async function mockGetCardInfoWithThumbs(subpath: string): Promise<CardInfo> {
+  await new Promise(r => setTimeout(r, 300))
+  return { ...(CARD_INFO[subpath] ?? {}), thumbnail: THUMBNAILS[subpath] ?? null }
 }
 
 // ── Stories ──────────────────────────────────────────────────────────────────
@@ -145,19 +161,48 @@ them to a base64 data URI (see the **FileCard** docs for the conversion pattern)
   args: {
     ...Default.args,
     iconSize: 'lg',
-    getCardInfo: async (subpath: string): Promise<CardInfo> => {
-      await new Promise(r => setTimeout(r, 300))
-      const thumbnails: Record<string, string> = {
-        '2024-01/scan_001.h5': fakeThumbnail(200),
-        '2024-01/scan_002.h5': fakeThumbnail(260),
-        '2024-01/dark_field.h5': fakeThumbnail(30),
-        '2024-01/energy-scan/escan_001.h5': fakeThumbnail(160),
-        '2024-01/energy-scan/escan_002.h5': fakeThumbnail(140),
-        '2024-02/scan_010.h5': fakeThumbnail(300),
-      }
-      return { ...(CARD_INFO[subpath] ?? {}), thumbnail: thumbnails[subpath] ?? null }
+    getCardInfo: mockGetCardInfoWithThumbs,
+  },
+};
+
+const ICON_SIZE_LABELS = {
+  sm: '32 px — compact',
+  md: '48 px — default',
+  lg: '64 px — wide panel',
+} as const
+
+export const IconSizes: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: `
+All three \`iconSize\` values rendered side by side. The slot size applies uniformly
+to directory rows and file cards. Navigate into **2024-01** to see thumbnails.
+
+\`iconSize\` is the only thing that changes here — the same \`getCardInfo\` function
+and the same filesystem are used for all three panels.
+        `,
+      },
     },
   },
+  render: () => (
+    <div className="flex gap-6 items-start flex-wrap">
+      {(Object.keys(ICON_SIZE_LABELS) as Array<keyof typeof ICON_SIZE_LABELS>).map((size) => (
+        <div key={size} className="flex flex-col gap-1">
+          <p className="text-xs font-mono text-slate-500 pl-1">
+            iconSize=&quot;{size}&quot; &mdash; {ICON_SIZE_LABELS[size]}
+          </p>
+          <FileBrowserDemo
+            listDirectory={mockListDirectory}
+            getCardInfo={mockGetCardInfoWithThumbs}
+            onLoadFile={() => {}}
+            rootLabel="data"
+            iconSize={size}
+          />
+        </div>
+      ))}
+    </div>
+  ),
 };
 
 export const ErrorOnLoad: Story = {

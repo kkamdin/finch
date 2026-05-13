@@ -14,59 +14,6 @@ const meta = {
   component: FileBrowserView,
   parameters: {
     layout: 'padded',
-    docs: {
-      description: {
-        component: `
-**Most apps should import \`FileBrowser\`, not this component** — see below for when \`FileBrowserView\` is the right choice.
-
----
-
-### How the two components relate
-
-\`FileBrowser\` and \`FileBrowserView\` form a **container/view pair** — a common React pattern sometimes called the "presenter/container split" or "smart vs. dumb components". In classic MVC terms:
-
-| Component | MVC role | What it does |
-|---|---|---|
-| \`FileBrowser\` | **Controller** | Owns all state, fetches data, coordinates between your data layer and the view |
-| \`FileBrowserView\` | **View** | Renders whatever state it receives as props — no fetching, no internal navigation state |
-
-\`FileBrowser\` wraps \`FileBrowserView\` internally. You never need both.
-
----
-
-### Which one should I import?
-
-**Import \`FileBrowser\`** for the vast majority of use cases:
-
-\`\`\`tsx
-import { FileBrowser } from '@blueskyproject/finch'
-
-<FileBrowser
-  listDirectory={myApi.listDirectory}
-  getCardInfo={myApi.getCardInfo}
-  onLoadFile={path => openFile(path)}
-/>
-\`\`\`
-
-It manages navigation state, lazy card-info fetching (only visible cards are
-fetched, using the browser's IntersectionObserver API), and active-file
-tracking automatically.
-
-**Import \`FileBrowserView\`** only when you need to own the state yourself:
-
-- **URL-synced navigation** — store \`path\` in \`useSearchParams\` (React Router) so the browser back button navigates the file browser
-- **Shared store** — hold \`path\` and \`listing\` in Redux, Zustand, Jotai, etc., so other parts of the UI can read or drive navigation
-- **Server-side rendering** — pass a pre-fetched listing directly with no async on the client
-- **Isolated testing** — render any state deterministically by passing data as props
-
-The \`filterFn\` prop is only available on \`FileBrowserView\`. It lets the consuming
-app apply an external predicate on top of the built-in text and tag filters without
-reimplementing the filter bar UI.
-
-*Further reading: search "React container presenter pattern" or "React smart dumb components".*
-        `,
-      },
-    },
   },
   tags: ['autodocs'],
   args: {
