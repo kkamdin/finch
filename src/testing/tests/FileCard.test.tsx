@@ -91,6 +91,23 @@ describe('FileCard', () => {
     expect(screen.getByRole('button')).not.toHaveAttribute('aria-pressed')
   })
 
+  it('renders md-sized icon slot by default', () => {
+    const { container } = render(<FileCard filename="f.h5" />)
+    expect(container.querySelector('.w-12.h-12')).toBeInTheDocument()
+  })
+
+  it('renders sm-sized icon slot when iconSize="sm"', () => {
+    const { container } = render(<FileCard filename="f.h5" iconSize="sm" />)
+    expect(container.querySelector('.w-8.h-8')).toBeInTheDocument()
+    expect(container.querySelector('.w-12')).not.toBeInTheDocument()
+  })
+
+  it('renders lg-sized icon slot when iconSize="lg"', () => {
+    const { container } = render(<FileCard filename="f.h5" iconSize="lg" />)
+    expect(container.querySelector('.w-16.h-16')).toBeInTheDocument()
+    expect(container.querySelector('.w-12')).not.toBeInTheDocument()
+  })
+
   it('calls onClick when the card is clicked', () => {
     const onClick = vi.fn()
     render(<FileCard filename="f.h5" onClick={onClick} />)

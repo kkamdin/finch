@@ -1,6 +1,8 @@
 import { File } from '@phosphor-icons/react'
 import { cn } from '../../lib/utils'
 
+export type IconSize = 'sm' | 'md' | 'lg'
+
 export type FileCardProps = {
   /** The filename displayed as the card's primary label. Required. */
   filename: string
@@ -13,12 +15,19 @@ export type FileCardProps = {
   /**
    * Thumbnail image URL.
    * - string  → renders the image
-   * - null    → renders an empty gray placeholder (thumbnail expected but unavailable)
+   * - null    → renders an empty gray placeholder (thumbnail unavailable or backend error)
    * - undefined (omitted) → renders a generic file icon (thumbnails not in use)
    */
   thumbnail?: string | null
   /** When false, the entire left icon/thumbnail slot is hidden for compact display. Defaults to true. */
   showIcon?: boolean
+  /**
+   * Size of the left icon/thumbnail slot. Defaults to 'md' (48 × 48 px).
+   * Use this to match the size your backend is returning for thumbnails — if you
+   * request 64 px images from your backend, pass `iconSize="lg"` so the slot
+   * fills them without cropping or blank space.
+   */
+  iconSize?: IconSize
   /**
    * Whether this card is the currently selected file. Drives active styling and
    * sets `aria-pressed` on the button — omit entirely for non-selectable cards.
@@ -38,6 +47,18 @@ const titleVariants = {
   active:  'text-sky-900',
 }
 
+export const iconSlotClasses: Record<IconSize, string> = {
+  sm: 'w-8 h-8',
+  md: 'w-12 h-12',
+  lg: 'w-16 h-16',
+}
+
+const iconPixelSizes: Record<IconSize, number> = {
+  sm: 16,
+  md: 24,
+  lg: 32,
+}
+
 /**
  * A single file entry card in the file browser.
  *
@@ -47,13 +68,14 @@ const titleVariants = {
  * @param detail - Optional second secondary text line, rendered in monospace.
  * @param thumbnail - Thumbnail URL (string), gray placeholder (null), or generic icon (undefined).
  * @param showIcon - When false, hides the left icon/thumbnail slot. Defaults to true.
+ * @param iconSize - Size of the icon/thumbnail slot: 'sm' (32 px), 'md' (48 px), 'lg' (64 px). Defaults to 'md'.
  * @param isActive - Marks this card as the currently selected file; sets aria-pressed.
  * @param onClick - Callback fired when the card is clicked.
  * @param className - Additional Tailwind classes applied to the root button element.
  */
 export default function FileCard({
   filename, tag, subtitle, detail, thumbnail,
-  showIcon = true, isActive, onClick, className,
+  showIcon = true, iconSize = 'md', isActive, onClick, className,
 }: FileCardProps) {
   const variant = isActive ? 'active' : 'default'
   return (
@@ -67,12 +89,15 @@ export default function FileCard({
       )}
     >
       {showIcon && (
-        <div className="w-12 h-12 shrink-0 rounded overflow-hidden bg-slate-100 self-center flex items-center justify-center">
+        <div className={cn(
+          'shrink-0 rounded overflow-hidden bg-slate-100 self-center flex items-center justify-center',
+          iconSlotClasses[iconSize],
+        )}>
           {typeof thumbnail === 'string'
             ? <img src={thumbnail} alt="" className="w-full h-full object-cover"/>
             : thumbnail === null
               ? null
-              : <File size={24} weight="fill" className="text-sky-700"/>
+              : <File size={iconPixelSizes[iconSize]} weight="fill" className="text-sky-700"/>
           }
         </div>
       )}

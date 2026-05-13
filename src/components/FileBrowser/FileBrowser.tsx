@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import FileBrowserView, { type CardInfo, type DirectoryListing } from './FileBrowserView'
+import type { IconSize } from './FileCard'
 
 // Navigation root vs. rootLabel — why they're different things:
 //
@@ -20,14 +21,29 @@ import FileBrowserView, { type CardInfo, type DirectoryListing } from './FileBro
 export type FileBrowserProps = {
   /** Function that fetches a directory listing for the given subpath. '' means root. */
   listDirectory: (subpath: string) => Promise<DirectoryListing>
-  /** Function that fetches tag, subtitle, detail, and thumbnail for a single file. */
-  getCardInfo: (subpath: string, size?: number) => Promise<CardInfo>
+  /**
+   * Function that fetches tag, subtitle, detail, and thumbnail for a single file.
+   * If you need to request a specific thumbnail resolution from your backend,
+   * hardcode the size in your implementation — match it to the `iconSize` you pass:
+   * 'sm' → 32 px, 'md' → 48 px, 'lg' → 64 px.
+   */
+  getCardInfo: (subpath: string) => Promise<CardInfo>
   /** Called with the relative file path when the user clicks a file. */
   onLoadFile: (path: string) => void
   /** Display label for the breadcrumb home button. Defaults to 'root'. */
   rootLabel?: string
   /** When false, hides icon/thumbnail slots on all cards. Defaults to true. */
   showIcon?: boolean
+  /**
+   * Size of the icon/thumbnail slot on all cards.
+   * - 'sm' — 32 × 32 px, suits compact panels or small thumbnails
+   * - 'md' — 48 × 48 px (default), suits most use cases
+   * - 'lg' — 64 × 64 px, suits wider panels where thumbnail detail matters
+   *
+   * Match this to the resolution your backend returns for thumbnails to avoid
+   * transferring images larger than the display slot.
+   */
+  iconSize?: IconSize
   /** Additional Tailwind classes applied to the root container. Use to override the default width. */
   className?: string
 }
@@ -49,14 +65,17 @@ export type FileBrowserProps = {
  *
  * @param listDirectory - Async function that returns a directory listing for the given subpath. Pass '' for root.
  * @param getCardInfo - Async function that returns tag, subtitle, detail, and thumbnail for a single file path.
+ *   To request a specific thumbnail resolution from your backend, hardcode the size in your implementation
+ *   and match it to the `iconSize` prop: 'sm' → 32 px, 'md' → 48 px, 'lg' → 64 px.
  * @param onLoadFile - Called with the relative file path when the user clicks a file.
  * @param rootLabel - Display label for the breadcrumb home button. Defaults to 'root'.
  * @param showIcon - When false, hides icon/thumbnail slots on all cards. Defaults to true.
+ * @param iconSize - Size of the icon/thumbnail slot: 'sm' (32 px), 'md' (48 px), 'lg' (64 px). Defaults to 'md'.
  * @param className - Additional Tailwind classes applied to the root container.
  */
 export default function FileBrowser({
   listDirectory, getCardInfo, onLoadFile,
-  rootLabel = 'root', showIcon = true, className,
+  rootLabel = 'root', showIcon = true, iconSize = 'md', className,
 }: FileBrowserProps) {
   const [path, setPath] = useState('')
   const [listing, setListing] = useState<DirectoryListing | null>(null)
@@ -126,6 +145,7 @@ export default function FileBrowser({
       cardInfo={cardInfo}
       rootLabel={rootLabel}
       showIcon={showIcon}
+      iconSize={iconSize}
       className={className}
       onNavigate={navigate}
       onFileClick={handleFileClick}

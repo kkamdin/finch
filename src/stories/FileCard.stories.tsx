@@ -22,17 +22,39 @@ that let the caller communicate different situations with the same slot:
 | Value | What renders | When to use |
 |---|---|---|
 | omitted / \`undefined\` | Generic file icon | Thumbnails are not in use for this file type |
-| \`null\` | Empty gray square | Thumbnails are in use but this one hasn't loaded yet |
-| \`"https://…"\` | The image | Thumbnail URL is available |
+| \`null\` | Empty gray square | Backend returned null (thumbnail unavailable or error) |
+| A URL string \`"https://…"\` | The image | Your backend exposes a dedicated image endpoint and returns its URL |
+| A base64 string \`"data:image/png;base64,…"\` | The image | Your backend returns raw image bytes (e.g. PNG); your \`getCardInfo\` encodes them before passing here |
 
-The \`null\` vs \`undefined\` distinction matters: \`null\` tells the card to reserve space
-for a thumbnail and show a placeholder, which prevents the layout from jumping when the
-URL arrives. \`undefined\` means thumbnails are not part of the design for these files at
-all, so a generic file icon is shown instead.
+The \`null\` vs \`undefined\` distinction matters: \`null\` means the backend tried to
+produce a thumbnail but couldn't (file not found, unsupported format, backend error, etc.)
+and no image will ever arrive. \`undefined\` means thumbnails are not part of the design for
+these files at all, so a generic file icon is shown instead.
 
-When \`FileBrowser\` fetches card info via \`getCardInfo\`, it passes whatever the backend
-returns for \`thumbnail\` — \`null\` if the backend signals "not ready yet", a URL string
-once it is available, or the prop is simply omitted for file types that don't have thumbnails.
+The image is displayed in a fixed 48 × 48 px box and cropped to fit — original image
+dimensions don't matter.
+
+**If your backend returns raw image bytes** (e.g. PNG bytes over a REST API), you cannot
+pass them directly. Your \`getCardInfo\` function must encode them into a base64 data URI
+string first. In JavaScript that looks like:
+
+\`\`\`ts
+// response.data is a Uint8Array / ArrayBuffer of PNG bytes from your backend
+const base64 = btoa(String.fromCharCode(...new Uint8Array(response.data)));
+const thumbnail = \`data:image/png;base64,\${base64}\`;
+\`\`\`
+
+Or with axios (set \`responseType: 'arraybuffer'\` on the request):
+
+\`\`\`ts
+const response = await axios.get('/thumbnail/scan_001.h5', { responseType: 'arraybuffer' });
+const base64 = btoa(String.fromCharCode(...new Uint8Array(response.data)));
+return { thumbnail: \`data:image/png;base64,\${base64}\` };
+\`\`\`
+
+**Note:** the gray placeholder also appears transiently while \`getCardInfo\` is still
+in flight — before the promise resolves, \`FileBrowserView\` coerces the not-yet-loaded
+value to \`null\` internally. This is a brief loading flicker, not a permanent state.
         `,
       },
     },
@@ -66,7 +88,7 @@ export const WithTagAndSubtitle: Story = {
 export const WithThumbnail: Story = {
   parameters: {
     docs: {
-      description: { story: '`thumbnail` is a URL string — the image fills the icon slot. The backend supplies this URL once the thumbnail is ready.' },
+      description: { story: '`thumbnail` is any string valid as `img src` — a `data:image/png;base64,…` URI if your backend returns raw bytes, or a URL if your backend exposes a thumbnail endpoint. The image is displayed in a fixed 48 × 48 px slot with `object-cover` cropping.' },
     },
   },
   args: {
@@ -80,13 +102,13 @@ export const WithThumbnail: Story = {
 export const ThumbnailPlaceholder: Story = {
   parameters: {
     docs: {
-      description: { story: '`thumbnail` is `null` — the slot renders as an empty gray square. This signals "a thumbnail belongs here but the URL hasn\'t loaded yet", which keeps the layout stable when the URL arrives later rather than the card jumping from icon → image.' },
+      description: { story: '`thumbnail={null}` — the backend returned null, meaning no thumbnail is available (file not found, unsupported format, or backend error). The slot renders as an empty gray square rather than a file icon, signalling that thumbnails are in use for this file type even though this one couldn\'t be produced.' },
     },
   },
   args: {
     filename: 'scan_001.h5',
     tag: 'hdf5',
-    subtitle: 'thumbnail pending…',
+    subtitle: '100 × 100 stxm scan',
     thumbnail: null,
   },
 };
@@ -116,6 +138,48 @@ export const NoIcon: Story = {
     tag: 'hdf5',
     subtitle: '100 × 100 stxm scan',
     showIcon: false,
+  },
+};
+
+export const SmallIcon: Story = {
+  parameters: {
+    docs: {
+      description: { story: '`iconSize="sm"` renders a 32 × 32 px slot. Useful in compact panels or narrow sidebars where card height matters more than thumbnail detail.' },
+    },
+  },
+  render: (args) => (
+    <div className="w-72">
+      <FileCard {...args} />
+    </div>
+  ),
+  args: {
+    filename: 'scan_001.h5',
+    tag: 'stxm',
+    subtitle: '100 × 100 energy scan',
+    detail: '(100, 100, 512)',
+    thumbnail: fakeThumbnail,
+    iconSize: 'sm',
+  },
+};
+
+export const LargeIcon: Story = {
+  parameters: {
+    docs: {
+      description: { story: '`iconSize="lg"` renders a 64 × 64 px slot. Use this when your backend returns 64 px thumbnails so the image fills the slot without upscaling.' },
+    },
+  },
+  render: (args) => (
+    <div className="w-72">
+      <FileCard {...args} />
+    </div>
+  ),
+  args: {
+    filename: 'scan_001.h5',
+    tag: 'stxm',
+    subtitle: '100 × 100 energy scan',
+    detail: '(100, 100, 512)',
+    thumbnail: fakeThumbnail,
+    iconSize: 'lg',
   },
 };
 

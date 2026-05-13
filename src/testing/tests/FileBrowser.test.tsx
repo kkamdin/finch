@@ -121,4 +121,28 @@ describe('FileBrowser', () => {
     unmount()
     expect(disconnectMock).toHaveBeenCalled()
   })
+
+  it('renders md-sized icon slots by default', async () => {
+    const props = makeProps()
+    const { container } = render(<FileBrowser {...props} />)
+    await waitFor(() => screen.getByText('2024-01'))
+    expect(container.querySelector('.w-12')).toBeInTheDocument()
+    expect(container.querySelector('.w-16')).not.toBeInTheDocument()
+  })
+
+  it('renders lg-sized icon slots when iconSize="lg"', async () => {
+    const props = makeProps()
+    const { container } = render(<FileBrowser {...props} iconSize="lg" />)
+    await waitFor(() => screen.getByText('2024-01'))
+    expect(container.querySelector('.w-16')).toBeInTheDocument()
+    expect(container.querySelector('.w-12')).not.toBeInTheDocument()
+  })
+
+  it('renders sm-sized icon slots when iconSize="sm"', async () => {
+    const props = makeProps()
+    const { container } = render(<FileBrowser {...props} iconSize="sm" />)
+    await waitFor(() => screen.getByText('2024-01'))
+    expect(container.querySelector('.w-8')).toBeInTheDocument()
+    expect(container.querySelector('.w-12')).not.toBeInTheDocument()
+  })
 })

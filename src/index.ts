@@ -8,7 +8,7 @@ export { default as FileBrowserView } from './components/FileBrowser/FileBrowser
 export type { FileBrowserViewProps, DirectoryListing, FileEntry, CardInfo } from './components/FileBrowser/FileBrowserView';
 
 export { default as FileCard } from './components/FileBrowser/FileCard';
-export type { FileCardProps } from './components/FileBrowser/FileCard';
+export type { FileCardProps, IconSize } from './components/FileBrowser/FileCard';
 
 export { default as Button } from './components/Button';
 export type { ButtonProps } from './components/Button';

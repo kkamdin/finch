@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { Folder, MagnifyingGlass } from '@phosphor-icons/react'
-import FileCard from './FileCard'
+import FileCard, { iconSlotClasses, type IconSize } from './FileCard'
 import { cn } from '../../lib/utils'
 
 export type FileEntry = {
@@ -20,6 +20,12 @@ export type DirectoryListing = {
   files: FileEntry[]
 }
 
+const folderIconPixelSizes: Record<IconSize, number> = {
+  sm: 16,
+  md: 24,
+  lg: 32,
+}
+
 export type FileBrowserViewProps = {
   path: string
   listing: DirectoryListing | null
@@ -32,6 +38,8 @@ export type FileBrowserViewProps = {
   rootLabel?: string
   /** When false, hides the icon/thumbnail slot on all cards for a compact layout. Defaults to true. */
   showIcon?: boolean
+  /** Size of the icon/thumbnail slot on all cards. Defaults to 'md' (48 × 48 px). */
+  iconSize?: IconSize
   /** Optional external filter applied before the built-in text and tag filters. */
   filterFn?: (file: FileEntry) => boolean
   onNavigate: (subpath: string) => void
@@ -78,6 +86,7 @@ export type FileBrowserViewProps = {
  * @param cardInfo - Map of file path → card metadata (tag, subtitle, detail, thumbnail).
  * @param rootLabel - Display label for the breadcrumb home button. Defaults to 'root'.
  * @param showIcon - When false, hides icon/thumbnail slots for a compact layout. Defaults to true.
+ * @param iconSize - Size of the icon/thumbnail slot: 'sm' (32 px), 'md' (48 px), 'lg' (64 px). Defaults to 'md'.
  * @param filterFn - Optional external predicate applied before the built-in text and tag filters.
  * @param onNavigate - Called with the target subpath when the user navigates into a directory.
  * @param onFileClick - Called with the filename when the user clicks a file card.
@@ -86,7 +95,7 @@ export type FileBrowserViewProps = {
  */
 export default function FileBrowserView({
   path, listing, navigating, navError, activeFile, cardInfo,
-  rootLabel = 'root', showIcon = true, filterFn,
+  rootLabel = 'root', showIcon = true, iconSize = 'md', filterFn,
   onNavigate, onFileClick, observeCard, className,
 }: FileBrowserViewProps) {
   const parts = path ? path.split('/').filter(Boolean) : []
@@ -200,8 +209,11 @@ export default function FileBrowserView({
               <button onClick={() => onNavigate(path ? `${path}/${dir}` : dir)}
                 className="w-full text-left p-2 rounded-lg border cursor-pointer flex items-stretch gap-2.5 bg-white border-slate-200 hover:bg-slate-50 hover:border-slate-300">
                 {showIcon && (
-                  <div className="w-12 h-12 shrink-0 rounded bg-slate-100 self-center flex items-center justify-center">
-                    <Folder size={24} weight="fill" className="text-sky-700"/>
+                  <div className={cn(
+                    'shrink-0 rounded bg-slate-100 self-center flex items-center justify-center',
+                    iconSlotClasses[iconSize],
+                  )}>
+                    <Folder size={folderIconPixelSizes[iconSize]} weight="fill" className="text-sky-700"/>
                   </div>
                 )}
                 <div className="flex flex-col justify-center min-w-0 flex-1">
@@ -227,6 +239,7 @@ export default function FileBrowserView({
                   detail={info?.detail ?? null}
                   thumbnail={info?.thumbnail ?? null}
                   showIcon={showIcon}
+                  iconSize={iconSize}
                   isActive={isActive}
                   onClick={() => onFileClick(name)}
                 />
