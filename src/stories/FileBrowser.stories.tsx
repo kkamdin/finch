@@ -20,27 +20,27 @@ type Story = StoryObj<typeof meta>;
 const FS: Record<string, DirectoryListing> = {
   '': {
     directories: ['2024-01', '2024-02'],
-    files: [{ name: 'README.txt', card_info_available: false }],
+    files: [{ name: 'README.txt', cardInfoAvailable: false }],
   },
   '2024-01': {
     directories: ['energy-scan'],
     files: [
-      { name: 'scan_001.h5', card_info_available: true },
-      { name: 'scan_002.h5', card_info_available: true },
-      { name: 'dark_field.h5', card_info_available: true },
+      { name: 'scan_001.h5', cardInfoAvailable: true },
+      { name: 'scan_002.h5', cardInfoAvailable: true },
+      { name: 'dark_field.h5', cardInfoAvailable: true },
     ],
   },
   '2024-01/energy-scan': {
     directories: [],
     files: [
-      { name: 'escan_001.h5', card_info_available: true },
-      { name: 'escan_002.h5', card_info_available: true },
+      { name: 'escan_001.h5', cardInfoAvailable: true },
+      { name: 'escan_002.h5', cardInfoAvailable: true },
     ],
   },
   '2024-02': {
     directories: [],
     files: [
-      { name: 'scan_010.h5', card_info_available: true },
+      { name: 'scan_010.h5', cardInfoAvailable: true },
     ],
   },
 };

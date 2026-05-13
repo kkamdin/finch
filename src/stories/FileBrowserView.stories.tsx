@@ -29,10 +29,10 @@ type Story = StoryObj<typeof meta>;
 const sampleListing: DirectoryListing = {
   directories: ['2024-01', '2024-02'],
   files: [
-    { name: 'scan_001.h5', card_info_available: true },
-    { name: 'scan_002.h5', card_info_available: true },
-    { name: 'dark_field.h5', card_info_available: true },
-    { name: 'flat_field.h5', card_info_available: false },
+    { name: 'scan_001.h5', cardInfoAvailable: true },
+    { name: 'scan_002.h5', cardInfoAvailable: true },
+    { name: 'dark_field.h5', cardInfoAvailable: true },
+    { name: 'flat_field.h5', cardInfoAvailable: false },
   ],
 };
 

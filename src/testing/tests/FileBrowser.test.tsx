@@ -26,14 +26,14 @@ afterEach(() => {
 const rootListing: DirectoryListing = {
   directories: ['2024-01'],
   files: [
-    { name: 'scan_001.h5', card_info_available: false },
-    { name: 'scan_002.h5', card_info_available: true },
+    { name: 'scan_001.h5', cardInfoAvailable: false },
+    { name: 'scan_002.h5', cardInfoAvailable: true },
   ],
 }
 
 const subdirListing: DirectoryListing = {
   directories: [],
-  files: [{ name: 'dark_field.h5', card_info_available: false }],
+  files: [{ name: 'dark_field.h5', cardInfoAvailable: false }],
 }
 
 const cardInfoResult: CardInfo = { tag: 'hdf5', subtitle: '100 × 100' }

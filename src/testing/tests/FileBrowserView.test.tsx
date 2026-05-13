@@ -6,8 +6,8 @@ import type { DirectoryListing, CardInfo } from '../../components/FileBrowser/Fi
 const listing: DirectoryListing = {
   directories: ['subdir'],
   files: [
-    { name: 'scan_001.h5', card_info_available: false },
-    { name: 'scan_002.h5', card_info_available: true },
+    { name: 'scan_001.h5', cardInfoAvailable: false },
+    { name: 'scan_002.h5', cardInfoAvailable: true },
   ],
 }
 
@@ -73,7 +73,7 @@ describe('FileBrowserView', () => {
     // Must use a listing with no directories — the empty-state message only
     // renders when both directories and visibleFiles are empty.
     renderPresenter({
-      listing: { directories: [], files: [{ name: 'scan_001.h5', card_info_available: false }] },
+      listing: { directories: [], files: [{ name: 'scan_001.h5', cardInfoAvailable: false }] },
       filterFn: () => false,
     })
     expect(screen.getByText('No files match the current filter')).toBeInTheDocument()

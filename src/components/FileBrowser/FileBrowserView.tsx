@@ -5,7 +5,7 @@ import { cn } from '../../lib/utils'
 
 export type FileEntry = {
   name: string
-  card_info_available: boolean
+  cardInfoAvailable: boolean
 }
 
 export type CardInfo = {
@@ -139,7 +139,7 @@ export default function FileBrowserView({
     <div className={cn('flex flex-col h-full min-h-0 w-72 min-w-48', className)}>
 
       {/* Breadcrumb */}
-      <div className="px-3 py-2 border-b border-slate-200 flex items-center gap-1 min-w-0 flex-wrap">
+      <nav aria-label="Directory breadcrumb" className="px-3 py-2 border-b border-slate-200 flex items-center gap-1 min-w-0 flex-wrap">
         <button onClick={() => onNavigate('')}
           className="mono text-xs text-sky-700 hover:underline cursor-pointer whitespace-nowrap">
           {rootLabel}
@@ -157,7 +157,7 @@ export default function FileBrowserView({
             </React.Fragment>
           )
         })}
-      </div>
+      </nav>
 
       {/* Filter bar — only shown once a listing is available */}
       {listing && (
@@ -169,6 +169,7 @@ export default function FileBrowserView({
             </span>
             <input
               type="text"
+              aria-label="Filter files"
               value={textFilter}
               onChange={e => setTextFilter(e.target.value)}
               placeholder="filter file names…"
@@ -217,15 +218,15 @@ export default function FileBrowserView({
               </button>
             </li>
           ))}
-          {visibleFiles.map(({ name, card_info_available }) => {
+          {visibleFiles.map(({ name, cardInfoAvailable }) => {
             const fullPath = path ? `${path}/${name}` : name
             const isActive = activeFile === fullPath
             const info = cardInfo[fullPath]
             return (
               <li
                 key={name}
-                ref={card_info_available ? observeCard : undefined}
-                data-filepath={card_info_available ? fullPath : undefined}
+                ref={cardInfoAvailable ? observeCard : undefined}
+                data-filepath={cardInfoAvailable ? fullPath : undefined}
               >
                 <FileCard
                   filename={name}
