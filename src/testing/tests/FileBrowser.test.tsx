@@ -170,6 +170,58 @@ describe('FileBrowser', () => {
     await waitFor(() => expect(screen.getByText('failed to read metadata')).toBeInTheDocument())
   })
 
+  it('calls an updated onCardInfoError when the prop changes before getCardInfo settles', async () => {
+    let ioCallback: IntersectionObserverCallback | null = null
+    vi.stubGlobal('IntersectionObserver', class {
+      unobserve = vi.fn()
+      disconnect = vi.fn()
+      constructor(cb: IntersectionObserverCallback) { ioCallback = cb }
+      observe(el: Element) {
+        ioCallback?.([{ isIntersecting: true, target: el } as IntersectionObserverEntry], this as unknown as IntersectionObserver)
+      }
+    })
+
+    let rejectCard!: (err: Error) => void
+    const slowReject = new Promise<CardInfo>((_, reject) => { rejectCard = reject })
+
+    const originalError = vi.fn()
+    const updatedError = vi.fn()
+    const getCardInfo = vi.fn().mockReturnValue(slowReject)
+    const listDirectory = vi.fn().mockResolvedValue({
+      directories: [],
+      files: [{ name: 'scan_001.h5', cardInfoAvailable: true }],
+    })
+
+    const { rerender } = render(
+      <FileBrowser
+        listDirectory={listDirectory}
+        getCardInfo={getCardInfo}
+        onLoadFile={vi.fn()}
+        onCardInfoError={originalError}
+      />
+    )
+
+    // IO stub fires getCardInfo synchronously on observe — wait for both.
+    await waitFor(() => expect(screen.getByText('scan_001.h5')).toBeInTheDocument())
+    await waitFor(() => expect(getCardInfo).toHaveBeenCalled())
+
+    // Swap onCardInfoError before the slow promise settles.
+    rerender(
+      <FileBrowser
+        listDirectory={listDirectory}
+        getCardInfo={getCardInfo}
+        onLoadFile={vi.fn()}
+        onCardInfoError={updatedError}
+      />
+    )
+
+    // Reject now — ref should see updatedError, not the stale originalError.
+    rejectCard(new Error('fetch failed'))
+
+    await waitFor(() => expect(updatedError).toHaveBeenCalledWith('scan_001.h5', expect.any(Error)))
+    expect(originalError).not.toHaveBeenCalled()
+  })
+
   it('calls onCardInfoError with the subpath and error when getCardInfo rejects', async () => {
     // Override the beforeEach stub with one that captures the callback and fires it
     // synchronously on observe() so card-info fetches are triggered in jsdom.

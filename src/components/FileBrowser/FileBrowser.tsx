@@ -97,6 +97,18 @@ export default function FileBrowser({
   const cardInfoFetchedRef = useRef<Set<string>>(new Set())
   const navSeqRef = useRef(0)
 
+  // Latest-ref pattern: keep refs current on every render so async callbacks
+  // always call the newest prop without those props appearing in effect/
+  // useCallback deps (which would force expensive teardowns on identity changes).
+  // Assigned synchronously during render so the ref is current before any
+  // async callback can read it.
+  const listDirectoryRef = useRef(listDirectory)
+  const getCardInfoRef = useRef(getCardInfo)
+  const onCardInfoErrorRef = useRef(onCardInfoError)
+  listDirectoryRef.current = listDirectory
+  getCardInfoRef.current = getCardInfo
+  onCardInfoErrorRef.current = onCardInfoError
+
   useEffect(() => {
     cardObserverRef.current = new IntersectionObserver(entries => {
       entries.forEach(entry => {
@@ -105,18 +117,18 @@ export default function FileBrowser({
         if (!fp || cardInfoFetchedRef.current.has(fp)) return
         cardInfoFetchedRef.current.add(fp)
         cardObserverRef.current!.unobserve(entry.target)
-        getCardInfo(fp)
+        getCardInfoRef.current(fp)
           .then(info => setCardInfo(prev => ({ ...prev, [fp]: info })))
           .catch(err => {
             const message = err instanceof Error ? err.message : String(err)
             setCardInfo(prev => ({ ...prev, [fp]: { error: message } }))
-            onCardInfoError?.(fp, err)
+            onCardInfoErrorRef.current?.(fp, err)
           })
       })
     }, { threshold: 0 })
 
     return () => cardObserverRef.current?.disconnect()
-  }, [getCardInfo])
+  }, [])
 
   const observeCard = useCallback((node: HTMLLIElement | null) => {
     if (node && cardObserverRef.current) cardObserverRef.current.observe(node)
@@ -132,7 +144,7 @@ export default function FileBrowser({
     setNavigating(true)
     setNavError(null)
     try {
-      const result = await listDirectory(subpath)
+      const result = await listDirectoryRef.current(subpath)
       if (seq !== navSeqRef.current) return
       setListing(result)
       setPath(subpath)
@@ -142,7 +154,7 @@ export default function FileBrowser({
     } finally {
       if (seq === navSeqRef.current) setNavigating(false)
     }
-  }, [listDirectory])
+  }, [])
 
   useEffect(() => { navigate('') }, [navigate])
 
