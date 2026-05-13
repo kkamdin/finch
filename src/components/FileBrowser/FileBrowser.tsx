@@ -29,6 +29,20 @@ export type FileBrowserProps = {
   getCardInfo: (subpath: string) => Promise<CardInfo>
   /** Called with the relative file path when the user clicks a file. */
   onLoadFile: (path: string) => void
+  /**
+   * Called when `getCardInfo` rejects for a specific file.
+   *
+   * This is a *partial* failure: the file is already visible in the listing
+   * (meaning `listDirectory` succeeded and the backend is reachable), but
+   * fetching its extra metadata — tag, subtitle, detail, thumbnail — failed.
+   * Typical causes: thumbnail generation threw on a corrupt file, the metadata
+   * endpoint timed out for one entry, or the file was deleted after the listing
+   * was fetched.
+   *
+   * The card is still rendered and the file is still clickable; it just shows
+   * no metadata. Use this callback to log, show a toast, or surface a retry.
+   */
+  onCardInfoError?: (subpath: string, error: unknown) => void
   /** Display label for the breadcrumb home button. Defaults to 'root'. */
   rootLabel?: string
   /** When false, hides icon/thumbnail slots on all cards. Defaults to true. */
@@ -63,7 +77,7 @@ export type FileBrowserProps = {
  * URL or a shared store), use `FileBrowserView` directly instead.
  */
 export default function FileBrowser({
-  listDirectory, getCardInfo, onLoadFile,
+  listDirectory, getCardInfo, onLoadFile, onCardInfoError,
   rootLabel = 'root', showIcon = true, iconSize = 'md', className,
 }: FileBrowserProps) {
   const [path, setPath] = useState('')
@@ -86,7 +100,11 @@ export default function FileBrowser({
         cardObserverRef.current!.unobserve(entry.target)
         getCardInfo(fp)
           .then(info => setCardInfo(prev => ({ ...prev, [fp]: info })))
-          .catch(() => {})
+          .catch(err => {
+            const message = err instanceof Error ? err.message : String(err)
+            setCardInfo(prev => ({ ...prev, [fp]: { error: message } }))
+            onCardInfoError?.(fp, err)
+          })
       })
     }, { threshold: 0 })
 

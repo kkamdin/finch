@@ -145,4 +145,82 @@ describe('FileBrowser', () => {
     expect(container.querySelector('.w-8')).toBeInTheDocument()
     expect(container.querySelector('.w-12')).not.toBeInTheDocument()
   })
+
+  it('renders the error message on the card when getCardInfo rejects', async () => {
+    let ioCallback: IntersectionObserverCallback | null = null
+    vi.stubGlobal('IntersectionObserver', class {
+      unobserve = vi.fn()
+      disconnect = vi.fn()
+      constructor(cb: IntersectionObserverCallback) { ioCallback = cb }
+      observe(el: Element) {
+        ioCallback?.([{ isIntersecting: true, target: el } as IntersectionObserverEntry], this as unknown as IntersectionObserver)
+      }
+    })
+
+    const props = makeProps({
+      listDirectory: vi.fn().mockResolvedValue({
+        directories: [],
+        files: [{ name: 'scan_001.h5', cardInfoAvailable: true }],
+      }),
+      getCardInfo: vi.fn().mockRejectedValue(new Error('failed to read metadata')),
+    })
+
+    render(<FileBrowser {...props} />)
+    await waitFor(() => screen.getByText('scan_001.h5'))
+    await waitFor(() => expect(screen.getByText('failed to read metadata')).toBeInTheDocument())
+  })
+
+  it('calls onCardInfoError with the subpath and error when getCardInfo rejects', async () => {
+    // Override the beforeEach stub with one that captures the callback and fires it
+    // synchronously on observe() so card-info fetches are triggered in jsdom.
+    let ioCallback: IntersectionObserverCallback | null = null
+    vi.stubGlobal('IntersectionObserver', class {
+      unobserve = vi.fn()
+      disconnect = vi.fn()
+      constructor(cb: IntersectionObserverCallback) { ioCallback = cb }
+      observe(el: Element) {
+        ioCallback?.([{ isIntersecting: true, target: el } as IntersectionObserverEntry], this as unknown as IntersectionObserver)
+      }
+    })
+
+    const error = new Error('backend unavailable')
+    const onCardInfoError = vi.fn()
+    const props = makeProps({
+      listDirectory: vi.fn().mockResolvedValue({
+        directories: [],
+        files: [{ name: 'scan_001.h5', cardInfoAvailable: true }],
+      }),
+      getCardInfo: vi.fn().mockRejectedValue(error),
+      onCardInfoError,
+    })
+
+    render(<FileBrowser {...props} />)
+    await waitFor(() => screen.getByText('scan_001.h5'))
+    await waitFor(() => expect(onCardInfoError).toHaveBeenCalledWith('scan_001.h5', error))
+  })
+
+  it('does not throw when getCardInfo rejects and onCardInfoError is omitted', async () => {
+    let ioCallback: IntersectionObserverCallback | null = null
+    vi.stubGlobal('IntersectionObserver', class {
+      unobserve = vi.fn()
+      disconnect = vi.fn()
+      constructor(cb: IntersectionObserverCallback) { ioCallback = cb }
+      observe(el: Element) {
+        ioCallback?.([{ isIntersecting: true, target: el } as IntersectionObserverEntry], this as unknown as IntersectionObserver)
+      }
+    })
+
+    const props = makeProps({
+      listDirectory: vi.fn().mockResolvedValue({
+        directories: [],
+        files: [{ name: 'scan_001.h5', cardInfoAvailable: true }],
+      }),
+      getCardInfo: vi.fn().mockRejectedValue(new Error('backend unavailable')),
+    })
+
+    render(<FileBrowser {...props} />)
+    await waitFor(() => screen.getByText('scan_001.h5'))
+    await waitFor(() => expect(props.getCardInfo).toHaveBeenCalled())
+    // No assertion needed beyond "didn't throw" — the component stays functional
+  })
 })

@@ -219,3 +219,29 @@ export const ErrorOnLoad: Story = {
     rootLabel: 'data',
   },
 };
+
+export const CardInfoError: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: `
+\`onCardInfoError\` fires when \`getCardInfo\` rejects for a specific file. This is
+a **partial** failure — the directory listing succeeded (the file names came from
+the backend), but fetching the extra metadata for those files failed. Typical
+causes: thumbnail generation threw on a corrupt file, or the metadata endpoint
+timed out for one entry.
+
+The error message is shown inline on the card in place of subtitle and detail.
+The card is still rendered and clickable. Navigate into **2024-01** to see it.
+        `,
+      },
+    },
+  },
+  render: (args) => <FileBrowserDemo {...args} />,
+  args: {
+    listDirectory: mockListDirectory,
+    getCardInfo: async () => { throw new Error('failed to read metadata') },
+    onLoadFile: () => {},
+    rootLabel: 'data',
+  },
+};

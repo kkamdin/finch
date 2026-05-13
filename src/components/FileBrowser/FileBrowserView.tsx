@@ -13,6 +13,8 @@ export type CardInfo = {
   subtitle?: string | null
   detail?: string | null
   thumbnail?: string | null
+  /** Set by FileBrowser when getCardInfo rejects. Rendered on the card in place of subtitle/detail. */
+  error?: string
 }
 
 export type DirectoryListing = {
@@ -234,6 +236,7 @@ export default function FileBrowserView({
                   subtitle={info?.subtitle ?? null}
                   detail={info?.detail ?? null}
                   thumbnail={info?.thumbnail ?? null}
+                  error={info?.error}
                   showIcon={showIcon}
                   iconSize={iconSize}
                   isActive={isActive}

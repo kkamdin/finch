@@ -12,6 +12,8 @@ export type FileCardProps = {
   subtitle?: string | null
   /** Second line of secondary text, rendered in monospace (e.g. shape info). */
   detail?: string | null
+  /** Error message shown on the card when metadata could not be fetched. Replaces subtitle/detail. */
+  error?: string
   /**
    * Thumbnail image URL.
    * - string  → renders the image
@@ -65,7 +67,7 @@ const iconPixelSizes: Record<IconSize, number> = {
  * A single file entry card in the file browser.
  */
 export default function FileCard({
-  filename, tag, subtitle, detail, thumbnail,
+  filename, tag, subtitle, detail, thumbnail, error,
   showIcon = true, iconSize = 'md', isActive, onClick, className,
 }: FileCardProps) {
   const variant = isActive ? 'active' : 'default'
@@ -107,8 +109,13 @@ export default function FileCard({
             </span>
           )}
         </div>
-        {subtitle && <p className="text-xs mt-0.5 truncate text-slate-500">{subtitle}</p>}
-        {detail && <p className="text-xs mt-0.5 truncate text-slate-400 font-mono">{detail}</p>}
+        {error
+          ? <p className="text-xs mt-0.5 truncate text-red-400">{error}</p>
+          : <>
+              {subtitle && <p className="text-xs mt-0.5 truncate text-slate-500">{subtitle}</p>}
+              {detail && <p className="text-xs mt-0.5 truncate text-slate-400 font-mono">{detail}</p>}
+            </>
+        }
       </div>
     </button>
   )
