@@ -55,16 +55,40 @@ describe('FileCard', () => {
   it('applies active background class when isActive is true', () => {
     const { container } = render(<FileCard filename="f.h5" isActive />)
     expect(container.firstChild).toHaveClass('bg-sky-50')
+    expect(container.firstChild).not.toHaveClass('bg-white')
   })
 
   it('applies default background class when not active', () => {
     const { container } = render(<FileCard filename="f.h5" />)
     expect(container.firstChild).toHaveClass('bg-white')
+    expect(container.firstChild).not.toHaveClass('bg-sky-50')
   })
 
   it('applies active text color to the filename when active', () => {
     render(<FileCard filename="f.h5" isActive />)
     expect(screen.getByText('f.h5')).toHaveClass('text-sky-900')
+    expect(screen.getByText('f.h5')).not.toHaveClass('text-slate-800')
+  })
+
+  it('applies default text color to the filename when not active', () => {
+    render(<FileCard filename="f.h5" />)
+    expect(screen.getByText('f.h5')).toHaveClass('text-slate-900')
+    expect(screen.getByText('f.h5')).not.toHaveClass('text-sky-900')
+  })
+
+  it('sets aria-pressed to true when isActive is true', () => {
+    render(<FileCard filename="f.h5" isActive={true} />)
+    expect(screen.getByRole('button')).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('sets aria-pressed to false when isActive is false', () => {
+    render(<FileCard filename="f.h5" isActive={false} />)
+    expect(screen.getByRole('button')).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('omits aria-pressed when isActive is not provided', () => {
+    render(<FileCard filename="f.h5" />)
+    expect(screen.getByRole('button')).not.toHaveAttribute('aria-pressed')
   })
 
   it('calls onClick when the card is clicked', () => {

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import FileBrowser from '../components/FileBrowser/FileBrowser';
-import type { DirectoryListing, CardInfo } from '../components/FileBrowser/FileBrowserPresenter';
+import type { DirectoryListing, CardInfo } from '../components/FileBrowser/FileBrowserView';
 
 const meta = {
   title: 'FileBrowser/FileBrowser',

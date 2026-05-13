@@ -28,6 +28,8 @@ export type FileBrowserProps = {
   rootLabel?: string
   /** When false, hides icon/thumbnail slots on all cards. Defaults to true. */
   showIcon?: boolean
+  /** Additional Tailwind classes applied to the root container. Use to override the default width. */
+  className?: string
 }
 
 /**
@@ -44,10 +46,17 @@ export type FileBrowserProps = {
  *
  * If you need to own the navigation state yourself (e.g. to sync it with the
  * URL or a shared store), use `FileBrowserView` directly instead.
+ *
+ * @param listDirectory - Async function that returns a directory listing for the given subpath. Pass '' for root.
+ * @param getCardInfo - Async function that returns tag, subtitle, detail, and thumbnail for a single file path.
+ * @param onLoadFile - Called with the relative file path when the user clicks a file.
+ * @param rootLabel - Display label for the breadcrumb home button. Defaults to 'root'.
+ * @param showIcon - When false, hides icon/thumbnail slots on all cards. Defaults to true.
+ * @param className - Additional Tailwind classes applied to the root container.
  */
 export default function FileBrowser({
   listDirectory, getCardInfo, onLoadFile,
-  rootLabel = 'root', showIcon = true,
+  rootLabel = 'root', showIcon = true, className,
 }: FileBrowserProps) {
   const [path, setPath] = useState('')
   const [listing, setListing] = useState<DirectoryListing | null>(null)
@@ -117,6 +126,7 @@ export default function FileBrowser({
       cardInfo={cardInfo}
       rootLabel={rootLabel}
       showIcon={showIcon}
+      className={className}
       onNavigate={navigate}
       onFileClick={handleFileClick}
       observeCard={observeCard}

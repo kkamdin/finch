@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { Folder, MagnifyingGlass } from '@phosphor-icons/react'
 import FileCard from './FileCard'
+import { cn } from '../../lib/utils'
 
 export type FileEntry = {
   name: string
@@ -36,6 +37,8 @@ export type FileBrowserViewProps = {
   onNavigate: (subpath: string) => void
   onFileClick: (name: string) => void
   observeCard: (node: HTMLLIElement | null) => void
+  /** Additional Tailwind classes applied to the root container. Use to override the default width. */
+  className?: string
 }
 
 /**
@@ -66,11 +69,25 @@ export type FileBrowserViewProps = {
  * The `filterFn` prop is only available on `FileBrowserView`. It lets the
  * consuming app apply an external predicate on top of the built-in text and
  * tag filters without reimplementing the filter bar.
+ *
+ * @param path - The current directory subpath. Empty string means root.
+ * @param listing - The directory contents to render, or null while loading.
+ * @param navigating - When true, shows a loading indicator in place of the listing.
+ * @param navError - Error message to display, or null if there is no error.
+ * @param activeFile - Full relative path of the currently selected file, or null.
+ * @param cardInfo - Map of file path → card metadata (tag, subtitle, detail, thumbnail).
+ * @param rootLabel - Display label for the breadcrumb home button. Defaults to 'root'.
+ * @param showIcon - When false, hides icon/thumbnail slots for a compact layout. Defaults to true.
+ * @param filterFn - Optional external predicate applied before the built-in text and tag filters.
+ * @param onNavigate - Called with the target subpath when the user navigates into a directory.
+ * @param onFileClick - Called with the filename when the user clicks a file card.
+ * @param observeCard - Ref callback to attach the IntersectionObserver to each observable card element.
+ * @param className - Additional Tailwind classes applied to the root container.
  */
 export default function FileBrowserView({
   path, listing, navigating, navError, activeFile, cardInfo,
   rootLabel = 'root', showIcon = true, filterFn,
-  onNavigate, onFileClick, observeCard,
+  onNavigate, onFileClick, observeCard, className,
 }: FileBrowserViewProps) {
   const parts = path ? path.split('/').filter(Boolean) : []
 
@@ -115,21 +132,21 @@ export default function FileBrowserView({
   }, [listing, cardInfo, path, filterFn, tagFilter, textFilter])
 
   return (
-    <div className="flex flex-col h-full min-h-0">
+    <div className={cn('flex flex-col h-full min-h-0 w-72 min-w-48', className)}>
 
       {/* Breadcrumb */}
-      <div className="px-3 py-2 border-b border-slate-100 flex items-center gap-1 min-w-0 flex-wrap">
+      <div className="px-3 py-2 border-b border-slate-200 flex items-center gap-1 min-w-0 flex-wrap">
         <button onClick={() => onNavigate('')}
-          className="mono text-[11px] text-sky-700 hover:underline cursor-pointer whitespace-nowrap">
+          className="mono text-xs text-sky-700 hover:underline cursor-pointer whitespace-nowrap">
           {rootLabel}
         </button>
         {parts.map((part, i) => {
           const subpath = parts.slice(0, i + 1).join('/')
           return (
             <React.Fragment key={subpath}>
-              <span className="text-slate-300 text-[11px]">/</span>
+              <span className="text-slate-300 text-xs">/</span>
               <button onClick={() => onNavigate(subpath)}
-                className="mono text-[11px] text-sky-700 hover:underline cursor-pointer truncate max-w-[120px]"
+                className="mono text-xs text-sky-700 hover:underline cursor-pointer truncate max-w-[120px]"
                 title={part}>
                 {part}
               </button>
@@ -140,9 +157,9 @@ export default function FileBrowserView({
 
       {/* Filter bar — only shown once a listing is available */}
       {listing && (
-        <div className="px-2 py-2 border-b border-slate-100 flex gap-2">
+        <div className="px-2 py-2 border-b border-slate-200 flex gap-2">
           {/* TODO: extract into a reusable SearchBox component for finch */}
-          <div className="flex items-center flex-1 rounded border border-slate-200 bg-white focus-within:border-sky-400">
+          <div className="flex items-center flex-1 rounded border border-slate-200 bg-white focus-within:border-sky-700">
             <span className="pl-3 pr-2 flex items-center">
               <MagnifyingGlass size={13} className="text-slate-400"/>
             </span>
@@ -151,14 +168,14 @@ export default function FileBrowserView({
               value={textFilter}
               onChange={e => setTextFilter(e.target.value)}
               placeholder="filter file names…"
-              className="flex-1 pr-3 py-1 text-[11px] bg-transparent placeholder:text-slate-400 focus:outline-none"
+              className="flex-1 pr-3 py-1 text-xs bg-transparent text-slate-900 placeholder:text-slate-400 focus:outline-none"
             />
           </div>
           {availableTags.length > 0 && (
             <select
               value={tagFilter}
               onChange={e => setTagFilter(e.target.value)}
-              className="text-[11px] rounded border border-slate-200 bg-white px-1.5 py-1 text-slate-600 focus:outline-none focus:border-sky-400 cursor-pointer"
+              className="text-xs rounded border border-slate-200 bg-white text-slate-500 px-1.5 py-1 focus:outline-none focus:border-sky-700 cursor-pointer"
             >
               <option value="all">all</option>
               {availableTags.map(tag => (
@@ -171,10 +188,10 @@ export default function FileBrowserView({
 
       {/* Listing */}
       {navigating && (
-        <div className="px-3 py-2 text-[11px] text-slate-400 mono">loading…</div>
+        <div className="px-3 py-2 text-xs text-slate-400 mono">loading…</div>
       )}
       {navError && (
-        <div className="px-3 py-2 text-[11px] text-red-600">{navError}</div>
+        <div className="px-3 py-2 text-xs text-red-500">{navError}</div>
       )}
       {listing && !navigating && (
         <ul className="flex-1 overflow-y-auto rounded-scrollbar p-1.5 space-y-1">
@@ -188,7 +205,7 @@ export default function FileBrowserView({
                   </div>
                 )}
                 <div className="flex flex-col justify-center min-w-0 flex-1">
-                  <span className="font-semibold text-sm truncate text-slate-800">{dir}</span>
+                  <span className="font-semibold text-sm truncate text-slate-900">{dir}</span>
                 </div>
               </button>
             </li>
@@ -217,7 +234,7 @@ export default function FileBrowserView({
             )
           })}
           {listing.directories.length === 0 && visibleFiles.length === 0 && (
-            <li className="px-3 py-4 text-[11px] text-slate-400 text-center">
+            <li className="px-3 py-4 text-xs text-slate-400 text-center">
               {listing.files.length > 0 ? 'No files match the current filter' : 'Empty directory'}
             </li>
           )}
