@@ -1,7 +1,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import FileBrowser from '../../components/FileBrowser/FileBrowser';
-import type { DirectoryListing, CardInfo } from '../../components/FileBrowser/FileBrowserView';
+import FileBrowserView, { type DirectoryListing, type CardInfo } from '../../components/FileBrowser/FileBrowserView';
 
 // jsdom doesn't implement IntersectionObserver — stub with a real class so `new` works
 const observeMock = vi.fn()
@@ -274,6 +274,34 @@ describe('FileBrowser', () => {
     await waitFor(() => screen.getByText('scan_001.h5'))
     await waitFor(() => expect(props.getCardInfo).toHaveBeenCalled())
     // No assertion needed beyond "didn't throw" — the component stays functional
+  })
+
+  it('remounts same-named file rows when the directory path changes', () => {
+    const listing: DirectoryListing = {
+      directories: [],
+      files: [{ name: 'scan_001.h5', cardInfoAvailable: true }],
+    }
+    const observeCard = vi.fn()
+    const baseProps = {
+      listing,
+      navigating: false,
+      navError: null,
+      activeFile: null,
+      cardInfo: {},
+      onNavigate: vi.fn(),
+      onFileClick: vi.fn(),
+      observeCard,
+    }
+
+    const { rerender } = render(<FileBrowserView {...baseProps} path="" />)
+    expect(observeCard).toHaveBeenCalledWith(expect.objectContaining({
+      dataset: expect.objectContaining({ filepath: 'scan_001.h5' }),
+    }))
+
+    rerender(<FileBrowserView {...baseProps} path="2024-01" />)
+    expect(observeCard).toHaveBeenCalledWith(expect.objectContaining({
+      dataset: expect.objectContaining({ filepath: '2024-01/scan_001.h5' }),
+    }))
   })
 
   it('ignores a stale navigation result when a newer navigation completes first', async () => {

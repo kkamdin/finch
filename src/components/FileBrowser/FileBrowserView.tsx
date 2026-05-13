@@ -243,7 +243,7 @@ export default function FileBrowserView({
             const info = cardInfo[fullPath]
             return (
               <li
-                key={name}
+                key={fullPath}
                 ref={cardInfoAvailable ? observeCard : undefined}
                 data-filepath={cardInfoAvailable ? fullPath : undefined}
               >
