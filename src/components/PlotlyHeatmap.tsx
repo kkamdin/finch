@@ -41,6 +41,8 @@ export type PlotlyHeatmapProps = {
     dragMode?: 'zoom' | 'pan' | 'select' | 'lasso' | false;
     /** Called when the user finishes a box selection (dragMode='select'). */
     onSelected?: (event: any) => void;
+    /** Plotly shape objects drawn on top of the heatmap in data coordinates. */
+    shapes?: any[];
 }
 
 //TODO: there are some issues with the display when zooming out
@@ -64,6 +66,7 @@ export default function PlotlyHeatmap({
     zmax,
     dragMode = 'zoom',
     onSelected,
+    shapes,
     ...props
 }: PlotlyHeatmapProps) {
     const plotContainer = useRef(null);
@@ -229,6 +232,7 @@ export default function PlotlyHeatmap({
                                 showgrid: showTicks
                             },
                             dragmode: dragMode,
+                            shapes: shapes ?? [],
                             autosize: true,
                             width: lockPlotWidthHeightToInputArray ? Math.min(dimensions.width, array[0].length) : dimensions.width,
                             height: lockPlotWidthHeightToInputArray ? Math.min(dimensions.height, array.length) : lockPlotHeightToParent ? dimensions.height : dynamicHeight,
