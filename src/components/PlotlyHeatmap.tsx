@@ -43,6 +43,12 @@ export type PlotlyHeatmapProps = {
     onSelected?: (event: any) => void;
     /** Plotly shape objects drawn on top of the heatmap in data coordinates. */
     shapes?: any[];
+    /**
+     * Where to render the zoom/pan/home toolbar.
+     * 'overlay' (default): Plotly's native modebar floats over the top-right corner on hover.
+     * 'above': hides the native modebar and renders a compact toolbar above the plot.
+     */
+    modeBar?: 'overlay' | 'above';
 }
 
 //TODO: there are some issues with the display when zooming out
@@ -67,6 +73,7 @@ export default function PlotlyHeatmap({
     dragMode = 'zoom',
     onSelected,
     shapes,
+    modeBar = 'overlay',
     ...props
 }: PlotlyHeatmapProps) {
     const plotContainer = useRef(null);
@@ -74,6 +81,10 @@ export default function PlotlyHeatmap({
     const [scaleValue, setScaleValue] = useState<number>(0); // 0 = no scale, 1-10 = increasing scale intensity
     const [debouncedScale, setDebouncedScale] = useState<number>(0);
     const [scaleType, setScaleType] = useState<'log' | 'gamma'>('log'); // Current scale type
+    // Internal zoom/pan state used when modeBar='above'
+    const [internalMode, setInternalMode] = useState<'zoom' | 'pan'>('zoom');
+    // Incrementing this resets the plot view (clears user zoom/pan) via Plotly's uirevision
+    const [uiRevision, setUiRevision] = useState(0);
 
     // Debounce the scale value to prevent excessive re-renders
     useEffect(() => {
@@ -197,6 +208,42 @@ export default function PlotlyHeatmap({
                     </div>
                 </div>
             )}
+            {modeBar === 'above' && (
+                <div className="flex items-center gap-0.5 px-1 py-0.5 border-b border-slate-100">
+                    {/* Zoom */}
+                    <button
+                        title="Zoom"
+                        onClick={() => setInternalMode('zoom')}
+                        className={cn('p-1 rounded hover:bg-slate-100', dragMode !== 'select' && internalMode === 'zoom' ? 'text-sky-700' : 'text-slate-400 hover:text-slate-600')}
+                    >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                            <circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35M11 8v6M8 11h6"/>
+                        </svg>
+                    </button>
+                    {/* Pan */}
+                    <button
+                        title="Pan"
+                        onClick={() => setInternalMode('pan')}
+                        className={cn('p-1 rounded hover:bg-slate-100', dragMode !== 'select' && internalMode === 'pan' ? 'text-sky-700' : 'text-slate-400 hover:text-slate-600')}
+                    >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                            <polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/>
+                            <polyline points="15 19 12 22 9 19"/><polyline points="19 9 22 12 19 15"/>
+                            <line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/>
+                        </svg>
+                    </button>
+                    {/* Home / reset view */}
+                    <button
+                        title="Reset view"
+                        onClick={() => setUiRevision(r => r + 1)}
+                        className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600"
+                    >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                            <path d="M3 12L12 3l9 9"/><path d="M9 21V12h6v9"/>
+                        </svg>
+                    </button>
+                </div>
+            )}
             <div className={cn(`h-full w-full rounded-b-md flex relative`, className)} ref={plotContainer} {...props}>
                 <div className="flex-1 flex flex-col">
                     <Plot
@@ -231,8 +278,9 @@ export default function PlotlyHeatmap({
                                 showticklabels: showTicks,
                                 showgrid: showTicks
                             },
-                            dragmode: dragMode,
+                            dragmode: modeBar === 'above' && dragMode !== 'select' ? internalMode : dragMode,
                             shapes: shapes ?? [],
+                            uirevision: modeBar === 'above' ? uiRevision : undefined,
                             autosize: true,
                             width: lockPlotWidthHeightToInputArray ? Math.min(dimensions.width, array[0].length) : dimensions.width,
                             height: lockPlotWidthHeightToInputArray ? Math.min(dimensions.height, array.length) : lockPlotHeightToParent ? dimensions.height : dynamicHeight,
@@ -243,7 +291,7 @@ export default function PlotlyHeatmap({
                                 b: xAxisTitle ? 40 : 0,
                             },
                         }}
-                        config={{ responsive: true }}
+                        config={{ responsive: true, displayModeBar: modeBar === 'above' ? false : 'hover' }}
                         onSelected={onSelected}
                         className="rounded-b-md flex-1"
                     />
