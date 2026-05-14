@@ -41,6 +41,8 @@ export type PlotlyHeatmapProps = {
     dragMode?: 'zoom' | 'pan' | 'select' | 'lasso' | false;
     /** Called when the user finishes a box selection (dragMode='select'). */
     onSelected?: (event: any) => void;
+    /** Called when the user clicks a mode button in the toolbar (modeBar='above'). */
+    onDragModeChange?: (mode: 'zoom' | 'pan' | 'select') => void;
     /** Plotly shape objects drawn on top of the heatmap in data coordinates. */
     shapes?: any[];
     /**
@@ -72,6 +74,7 @@ export default function PlotlyHeatmap({
     zmax,
     dragMode = 'zoom',
     onSelected,
+    onDragModeChange,
     shapes,
     modeBar = 'overlay',
     ...props
@@ -213,8 +216,11 @@ export default function PlotlyHeatmap({
                     {/* Zoom */}
                     <button
                         title="Zoom"
-                        onClick={() => setInternalMode('zoom')}
-                        className={cn('p-1 rounded hover:bg-slate-100', dragMode !== 'select' && internalMode === 'zoom' ? 'text-sky-700' : 'text-slate-400 hover:text-slate-600')}
+                        onClick={() => { setInternalMode('zoom'); onDragModeChange?.('zoom'); }}
+                        className={cn('p-1 rounded', dragMode === 'select'
+                            ? 'text-slate-300 pointer-events-none'
+                            : cn('hover:bg-slate-100', internalMode === 'zoom' ? 'text-sky-700' : 'text-slate-400 hover:text-slate-600')
+                        )}
                     >
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
                             <circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35M11 8v6M8 11h6"/>
@@ -223,13 +229,26 @@ export default function PlotlyHeatmap({
                     {/* Pan */}
                     <button
                         title="Pan"
-                        onClick={() => setInternalMode('pan')}
-                        className={cn('p-1 rounded hover:bg-slate-100', dragMode !== 'select' && internalMode === 'pan' ? 'text-sky-700' : 'text-slate-400 hover:text-slate-600')}
+                        onClick={() => { setInternalMode('pan'); onDragModeChange?.('pan'); }}
+                        className={cn('p-1 rounded', dragMode === 'select'
+                            ? 'text-slate-300 pointer-events-none'
+                            : cn('hover:bg-slate-100', internalMode === 'pan' ? 'text-sky-700' : 'text-slate-400 hover:text-slate-600')
+                        )}
                     >
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
                             <polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/>
                             <polyline points="15 19 12 22 9 19"/><polyline points="19 9 22 12 19 15"/>
                             <line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/>
+                        </svg>
+                    </button>
+                    {/* Select / ROI */}
+                    <button
+                        title="Draw ROI"
+                        onClick={() => onDragModeChange?.('select')}
+                        className={cn('p-1 rounded hover:bg-slate-100', dragMode === 'select' ? 'text-sky-700' : 'text-slate-400 hover:text-slate-600')}
+                    >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                            <rect x="3" y="3" width="18" height="18" rx="1" strokeDasharray="3 3"/>
                         </svg>
                     </button>
                     {/* Home / reset view */}
@@ -279,6 +298,7 @@ export default function PlotlyHeatmap({
                                 showgrid: showTicks
                             },
                             dragmode: modeBar === 'above' && dragMode !== 'select' ? internalMode : dragMode,
+                            ...({ selections: [] } as any),
                             shapes: shapes ?? [],
                             uirevision: modeBar === 'above' ? uiRevision : undefined,
                             autosize: true,
