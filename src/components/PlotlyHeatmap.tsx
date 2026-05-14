@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react'
 import Plot from 'react-plotly.js';
 import { cn } from '@/lib/utils';
 import ButtonIconOnly from './ButtonIconOnly';
+import { ArrowsOutCardinal, Cursor, HouseLine, MagnifyingGlassPlus } from '@phosphor-icons/react';
 
 export type ModeBarRenderProps = {
     /** Current Plotly drag mode, controlled externally via the dragMode prop */
@@ -77,6 +78,41 @@ export type PlotlyHeatmapProps = {
      * When omitted, a default zoom/pan/select/reset toolbar is rendered.
      */
     renderModeBar?: (props: ModeBarRenderProps) => React.ReactNode;
+}
+
+/** Default zoom/pan/cursor/reset toolbar rendered when modeBar='above' and no renderModeBar is provided. */
+export function DefaultModeBar({ dragMode, onModeChange, onResetView }: ModeBarRenderProps) {
+    return (
+        <>
+            <ButtonIconOnly
+                title="Cursor"
+                isSecondary
+                active={dragMode === false}
+                onClick={() => onModeChange(false)}
+                icon={<Cursor size={16} />}
+            />
+            <ButtonIconOnly
+                title="Zoom"
+                isSecondary
+                active={dragMode === 'zoom'}
+                onClick={() => onModeChange('zoom')}
+                icon={<MagnifyingGlassPlus size={16} />}
+            />
+            <ButtonIconOnly
+                title="Pan"
+                isSecondary
+                active={dragMode === 'pan'}
+                onClick={() => onModeChange('pan')}
+                icon={<ArrowsOutCardinal size={16} />}
+            />
+            <ButtonIconOnly
+                title="Reset view"
+                isSecondary
+                onClick={onResetView}
+                icon={<HouseLine size={16} />}
+            />
+        </>
+    );
 }
 
 /**
@@ -269,35 +305,11 @@ export default function PlotlyHeatmap({
                             onModeChange: handleModeChange,
                             onResetView: () => setZoomRanges({}),
                           })
-                        : <>
-                            <ButtonIconOnly
-                                title="Cursor"
-                                isSecondary
-                                active={internalMode === false}
-                                onClick={() => handleModeChange(false)}
-                                icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="m4 4 7.07 17 2.51-7.39L21 11.07z"/></svg>}
-                            />
-                            <ButtonIconOnly
-                                title="Zoom"
-                                isSecondary
-                                active={internalMode === 'zoom'}
-                                onClick={() => handleModeChange('zoom')}
-                                icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35M11 8v6M8 11h6"/></svg>}
-                            />
-                            <ButtonIconOnly
-                                title="Pan"
-                                isSecondary
-                                active={internalMode === 'pan'}
-                                onClick={() => handleModeChange('pan')}
-                                icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><polyline points="15 19 12 22 9 19"/><polyline points="19 9 22 12 19 15"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>}
-                            />
-                            <ButtonIconOnly
-                                title="Reset view"
-                                isSecondary
-                                onClick={() => setZoomRanges({})}
-                                icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M3 12L12 3l9 9"/><path d="M9 21V12h6v9"/></svg>}
-                            />
-                          </>
+                        : <DefaultModeBar
+                            dragMode={internalMode}
+                            onModeChange={handleModeChange}
+                            onResetView={() => setZoomRanges({})}
+                          />
                     }
                 </div>
             )}
