@@ -33,11 +33,19 @@ export type PlotlyHeatmapProps = {
     className?: string;
     /** Additional CSS classes applied to the optional controller panel. */
     classNameControls?: string;
+    /** Minimum value mapped to the bottom of the colorscale. Defaults to Plotly auto-scale. */
+    zmin?: number;
+    /** Maximum value mapped to the top of the colorscale. Defaults to Plotly auto-scale. */
+    zmax?: number;
+    /** Plotly dragmode for the plot. Use 'select' to enable box-select ROI drawing. */
+    dragMode?: 'zoom' | 'pan' | 'select' | 'lasso' | false;
+    /** Called when the user finishes a box selection (dragMode='select'). */
+    onSelected?: (event: any) => void;
 }
 
 //TODO: there are some issues with the display when zooming out
 export default function PlotlyHeatmap({
-    array, 
+    array,
     title = '',
     xAxisTitle = '',
     yAxisTitle = '',
@@ -52,6 +60,10 @@ export default function PlotlyHeatmap({
     flipYAxis = true,
     className,
     classNameControls,
+    zmin,
+    zmax,
+    dragMode = 'zoom',
+    onSelected,
     ...props
 }: PlotlyHeatmapProps) {
     const plotContainer = useRef(null);
@@ -190,8 +202,8 @@ export default function PlotlyHeatmap({
                                 z: processedArray,
                                 type: 'heatmap',
                                 colorscale: colorScale,
-                                zmin: 0,
-                                zmax: 255,
+                                zmin: zmin,
+                                zmax: zmax,
                                 showscale: showScale,
                             }
                         ]}
@@ -204,24 +216,22 @@ export default function PlotlyHeatmap({
                                 automargin: false,
                                 showticklabels: showTicks,
                                 showgrid: showTicks
-
-                                //scaleanchor: "y", // Ensure squares remain proportional
                             },
                             yaxis: {
                                 title: yAxisTitle,
-                                range: [-0.5, array.length-0.5], // Dynamically adjust y-axis range
+                                range: [-0.5, array.length-0.5],
                                 autorange: flipYAxis ? 'reversed' : false,
                                 automargin: false,
-                                tickmode: showTicks ? 'linear' : undefined, // tick marks should only appear when
-                                tick0: 0, // Starting tick
-                                dtick: showTicks ? tickStep : 10000, // Tick step,
+                                tickmode: showTicks ? 'linear' : undefined,
+                                tick0: 0,
+                                dtick: showTicks ? tickStep : 10000,
                                 showticklabels: showTicks,
                                 showgrid: showTicks
                             },
+                            dragmode: dragMode,
                             autosize: true,
                             width: lockPlotWidthHeightToInputArray ? Math.min(dimensions.width, array[0].length) : dimensions.width,
                             height: lockPlotWidthHeightToInputArray ? Math.min(dimensions.height, array.length) : lockPlotHeightToParent ? dimensions.height : dynamicHeight,
-                
                             margin: {
                                 l: (showTicks || yAxisTitle) ? 50 : 0,
                                 r: 0,
@@ -230,6 +240,7 @@ export default function PlotlyHeatmap({
                             },
                         }}
                         config={{ responsive: true }}
+                        onSelected={onSelected}
                         className="rounded-b-md flex-1"
                     />
                     <div className="absolute bottom-0 left-0 right-0 text-center text-md font-semibold">
