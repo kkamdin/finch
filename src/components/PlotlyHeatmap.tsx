@@ -105,8 +105,21 @@ export default function PlotlyHeatmap({
     const [scaleType, setScaleType] = useState<'log' | 'gamma'>('log'); // Current scale type
     // Internal zoom/pan state used when modeBar='above'
     const [internalMode, setInternalMode] = useState<'zoom' | 'pan'>('zoom');
-    // Incrementing this resets the plot view (clears user zoom/pan) via Plotly's uirevision
-    const [uiRevision, setUiRevision] = useState(0);
+    // Explicit zoom ranges captured from onRelayout. Empty = use defaults. Cleared by reset view.
+    const [zoomRanges, setZoomRanges] = useState<{ x?: [number, number]; y?: [number, number] }>({});
+
+    const handleRelayout = useCallback((event: any) => {
+        const hasX = event['xaxis.range[0]'] !== undefined;
+        const hasY = event['yaxis.range[0]'] !== undefined;
+        if (hasX || hasY) {
+            setZoomRanges(prev => ({
+                x: hasX ? [event['xaxis.range[0]'], event['xaxis.range[1]']] : prev.x,
+                y: hasY ? [event['yaxis.range[0]'], event['yaxis.range[1]']] : prev.y,
+            }));
+        } else if (event['xaxis.autorange'] || event['yaxis.autorange']) {
+            setZoomRanges({});
+        }
+    }, []);
 
     // Debounce the scale value to prevent excessive re-renders
     useEffect(() => {
@@ -242,7 +255,7 @@ export default function PlotlyHeatmap({
                             dragMode,
                             internalMode,
                             onModeChange: handleModeChange,
-                            onResetView: () => setUiRevision(r => r + 1),
+                            onResetView: () => setZoomRanges({}),
                           })
                         : <>
                             <ButtonIconOnly
@@ -271,7 +284,7 @@ export default function PlotlyHeatmap({
                             <ButtonIconOnly
                                 title="Reset view"
                                 isSecondary
-                                onClick={() => setUiRevision(r => r + 1)}
+                                onClick={() => setZoomRanges({})}
                                 icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M3 12L12 3l9 9"/><path d="M9 21V12h6v9"/></svg>}
                             />
                           </>
@@ -299,12 +312,14 @@ export default function PlotlyHeatmap({
                                 title: xAxisTitle,
                                 automargin: false,
                                 showticklabels: showTicks,
-                                showgrid: showTicks
+                                showgrid: showTicks,
+                                range: zoomRanges.x ?? [-0.5, (array[0]?.length ?? 1) - 0.5],
+                                autorange: false,
                             },
                             yaxis: {
                                 title: yAxisTitle,
-                                range: [-0.5, array.length-0.5],
-                                autorange: flipYAxis ? 'reversed' : false,
+                                range: zoomRanges.y ?? (flipYAxis ? [array.length - 0.5, -0.5] : [-0.5, array.length - 0.5]),
+                                autorange: false,
                                 automargin: false,
                                 tickmode: showTicks ? 'linear' : undefined,
                                 tick0: 0,
@@ -315,7 +330,6 @@ export default function PlotlyHeatmap({
                             dragmode: modeBar === 'above' && dragMode !== 'select' ? internalMode : dragMode,
                             ...({ selections: [] } as any),
                             shapes: shapes ?? [],
-                            uirevision: modeBar === 'above' ? uiRevision : undefined,
                             autosize: true,
                             width: lockPlotWidthHeightToInputArray ? Math.min(dimensions.width, array[0].length) : dimensions.width,
                             height: lockPlotWidthHeightToInputArray ? Math.min(dimensions.height, array.length) : lockPlotHeightToParent ? dimensions.height : dynamicHeight,
@@ -327,7 +341,8 @@ export default function PlotlyHeatmap({
                             },
                         }}
                         config={{ responsive: true, displayModeBar: modeBar === 'above' ? false : 'hover' }}
-                        onSelected={(event) => { onSelected?.(event); setUiRevision(r => r + 1); }}
+                        onSelected={(event) => { onSelected?.(event); onDragModeChange?.(internalMode); }}
+                        onRelayout={handleRelayout}
                         className="rounded-b-md flex-1"
                     />
                     <div className="absolute bottom-0 left-0 right-0 text-center text-md font-semibold">
