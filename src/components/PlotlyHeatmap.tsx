@@ -6,8 +6,8 @@ import ButtonIconOnly from './ButtonIconOnly';
 export type ModeBarRenderProps = {
     /** Current Plotly drag mode, controlled externally via the dragMode prop */
     dragMode: 'zoom' | 'pan' | false;
-    /** Set the active interaction mode */
-    onModeChange: (mode: 'zoom' | 'pan') => void;
+    /** Set the active interaction mode. Pass `false` to return to the default cursor (no drag interaction). */
+    onModeChange: (mode: 'zoom' | 'pan' | false) => void;
     /** Reset the plot view to its default zoom/pan state */
     onResetView: () => void;
 }
@@ -61,7 +61,8 @@ export type PlotlyHeatmapProps = {
      * Plotly. Use a canvas-based component when your app owns the ROI state and needs to drive
      * what is drawn — Plotly and the caller will fight over the DOM otherwise.
      */
-    onDragModeChange?: (mode: 'zoom' | 'pan') => void;
+    /** Called when the user changes the interaction mode. `false` means cursor/default (no drag). */
+    onDragModeChange?: (mode: 'zoom' | 'pan' | false) => void;
     /** Plotly shape objects drawn on top of the heatmap in data coordinates. */
     shapes?: any[];
     /**
@@ -78,7 +79,14 @@ export type PlotlyHeatmapProps = {
     renderModeBar?: (props: ModeBarRenderProps) => React.ReactNode;
 }
 
-//TODO: there are some issues with the display when zooming out
+/**
+ * A 2D heatmap rendered with Plotly. Supports zoom/pan, colorscales, log/gamma
+ * intensity scaling, optional axis labels, and a customisable toolbar.
+ *
+ * The component fills its parent container. Give the parent an explicit height
+ * (e.g. `h-96`) or use `lockPlotHeightToParent` to match the container's height,
+ * or rely on `verticalScaleFactor` to derive height from the array row count.
+ */
 export default function PlotlyHeatmap({
     array,
     title = '',
@@ -102,15 +110,14 @@ export default function PlotlyHeatmap({
     shapes,
     modeBar = 'overlay',
     renderModeBar,
-    ...props
 }: PlotlyHeatmapProps) {
     const plotContainer = useRef(null);
     const [dimensions, setDimensions] = useState({ width: 0, height: 0 }); //applied to plot, not the container
     const [scaleValue, setScaleValue] = useState<number>(0); // 0 = no scale, 1-10 = increasing scale intensity
     const [debouncedScale, setDebouncedScale] = useState<number>(0);
     const [scaleType, setScaleType] = useState<'log' | 'gamma'>('log'); // Current scale type
-    // Internal zoom/pan state used when modeBar='above'
-    const [internalMode, setInternalMode] = useState<'zoom' | 'pan'>('zoom');
+    // Internal zoom/pan/cursor state used when modeBar='above'. false = cursor (no drag).
+    const [internalMode, setInternalMode] = useState<'zoom' | 'pan' | false>(false);
     // Explicit zoom ranges captured from onRelayout. Empty = use defaults. Cleared by reset view.
     const [zoomRanges, setZoomRanges] = useState<{ x?: [number, number]; y?: [number, number] }>({});
 
@@ -187,7 +194,7 @@ export default function PlotlyHeatmap({
         setScaleValue(0); // Reset slider to off
     }, []);
 
-    const handleModeChange = useCallback((mode: 'zoom' | 'pan') => {
+    const handleModeChange = useCallback((mode: 'zoom' | 'pan' | false) => {
         setInternalMode(mode);
         onDragModeChange?.(mode);
     }, [onDragModeChange]);
@@ -264,6 +271,13 @@ export default function PlotlyHeatmap({
                           })
                         : <>
                             <ButtonIconOnly
+                                title="Cursor"
+                                isSecondary
+                                active={internalMode === false}
+                                onClick={() => handleModeChange(false)}
+                                icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="m4 4 7.07 17 2.51-7.39L21 11.07z"/></svg>}
+                            />
+                            <ButtonIconOnly
                                 title="Zoom"
                                 isSecondary
                                 active={internalMode === 'zoom'}
@@ -287,7 +301,7 @@ export default function PlotlyHeatmap({
                     }
                 </div>
             )}
-            <div className={cn(`h-full w-full rounded-b-md flex relative`, className)} ref={plotContainer} {...props}>
+            <div className={cn(`h-full w-full rounded-b-md flex relative`, className)} ref={plotContainer}>
                 <div className="flex-1 flex flex-col">
                     <Plot
                         data={[
