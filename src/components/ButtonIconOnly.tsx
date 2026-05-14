@@ -15,6 +15,8 @@ type ButtonIconOnlyProps = {
     isSecondary?: boolean;
     /** Renders the button in a pressed/active state */
     active?: boolean;
+    /** Tooltip shown on hover — important for accessibility on icon-only buttons */
+    title?: string;
 }
 
 const buttonVariants = {

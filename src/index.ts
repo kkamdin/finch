@@ -61,7 +61,7 @@ export {default as Widget} from './components/Widget';
 export type {WidgetProps} from './components/Widget';
 
 export { default as PlotlyHeatmap } from './components/PlotlyHeatmap';
-export type { PlotlyHeatmapProps } from './components/PlotlyHeatmap';
+export type { PlotlyHeatmapProps, ModeBarRenderProps } from './components/PlotlyHeatmap';
 
 export { default as PlotlyScatter } from './components/PlotlyScatter';
 export type { PlotlyScatterProps } from './components/PlotlyScatter';
