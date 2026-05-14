@@ -5,11 +5,9 @@ import ButtonIconOnly from './ButtonIconOnly';
 
 export type ModeBarRenderProps = {
     /** Current Plotly drag mode, controlled externally via the dragMode prop */
-    dragMode: 'zoom' | 'pan' | 'select' | 'lasso' | false;
-    /** Last active zoom/pan mode — use to restore state after exiting select */
-    internalMode: 'zoom' | 'pan';
+    dragMode: 'zoom' | 'pan' | false;
     /** Set the active interaction mode */
-    onModeChange: (mode: 'zoom' | 'pan' | 'select') => void;
+    onModeChange: (mode: 'zoom' | 'pan') => void;
     /** Reset the plot view to its default zoom/pan state */
     onResetView: () => void;
 }
@@ -49,12 +47,21 @@ export type PlotlyHeatmapProps = {
     zmin?: number;
     /** Maximum value mapped to the top of the colorscale. Defaults to Plotly auto-scale. */
     zmax?: number;
-    /** Plotly dragmode for the plot. Use 'select' to enable box-select ROI drawing. */
-    dragMode?: 'zoom' | 'pan' | 'select' | 'lasso' | false;
-    /** Called when the user finishes a box selection (dragMode='select'). */
-    onSelected?: (event: any) => void;
-    /** Called when the user clicks a mode button in the toolbar (modeBar='above'). */
-    onDragModeChange?: (mode: 'zoom' | 'pan' | 'select') => void;
+    /** Plotly dragmode for the plot. */
+    dragMode?: 'zoom' | 'pan' | false;
+    /**
+     * Called when the user clicks a mode button in the toolbar (modeBar='above').
+     *
+     * Why onSelected is not exposed: react-plotly.js provides an onSelected prop (the underlying
+     * plotly_selected event) for box-select ROI drawing, but Plotly owns the selection handles in
+     * the DOM and there is no supported way to clear them from a React component without importing
+     * plotly.js directly alongside react-plotly.js (which causes duplicate bundle weight and
+     * Node.js shim issues in browser builds). If you need ROI selection, use PlotlyHeatmap when
+     * Plotly's built-in zoom/pan interactions are sufficient and ROI state lives entirely inside
+     * Plotly. Use a canvas-based component when your app owns the ROI state and needs to drive
+     * what is drawn — Plotly and the caller will fight over the DOM otherwise.
+     */
+    onDragModeChange?: (mode: 'zoom' | 'pan') => void;
     /** Plotly shape objects drawn on top of the heatmap in data coordinates. */
     shapes?: any[];
     /**
@@ -91,7 +98,6 @@ export default function PlotlyHeatmap({
     zmin,
     zmax,
     dragMode = 'zoom',
-    onSelected,
     onDragModeChange,
     shapes,
     modeBar = 'overlay',
@@ -181,8 +187,8 @@ export default function PlotlyHeatmap({
         setScaleValue(0); // Reset slider to off
     }, []);
 
-    const handleModeChange = useCallback((mode: 'zoom' | 'pan' | 'select') => {
-        if (mode === 'zoom' || mode === 'pan') setInternalMode(mode);
+    const handleModeChange = useCallback((mode: 'zoom' | 'pan') => {
+        setInternalMode(mode);
         onDragModeChange?.(mode);
     }, [onDragModeChange]);
 
@@ -253,7 +259,6 @@ export default function PlotlyHeatmap({
                     {renderModeBar
                         ? renderModeBar({
                             dragMode,
-                            internalMode,
                             onModeChange: handleModeChange,
                             onResetView: () => setZoomRanges({}),
                           })
@@ -261,25 +266,16 @@ export default function PlotlyHeatmap({
                             <ButtonIconOnly
                                 title="Zoom"
                                 isSecondary
-                                active={internalMode === 'zoom' && dragMode !== 'select'}
-                                disabled={dragMode === 'select'}
+                                active={internalMode === 'zoom'}
                                 onClick={() => handleModeChange('zoom')}
                                 icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35M11 8v6M8 11h6"/></svg>}
                             />
                             <ButtonIconOnly
                                 title="Pan"
                                 isSecondary
-                                active={internalMode === 'pan' && dragMode !== 'select'}
-                                disabled={dragMode === 'select'}
+                                active={internalMode === 'pan'}
                                 onClick={() => handleModeChange('pan')}
                                 icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><polyline points="15 19 12 22 9 19"/><polyline points="19 9 22 12 19 15"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>}
-                            />
-                            <ButtonIconOnly
-                                title="Draw selection"
-                                isSecondary
-                                active={dragMode === 'select'}
-                                onClick={() => handleModeChange(dragMode === 'select' ? internalMode : 'select')}
-                                icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><rect x="3" y="3" width="18" height="18" rx="1" strokeDasharray="3 3"/></svg>}
                             />
                             <ButtonIconOnly
                                 title="Reset view"
@@ -327,8 +323,7 @@ export default function PlotlyHeatmap({
                                 showticklabels: showTicks,
                                 showgrid: showTicks
                             },
-                            dragmode: modeBar === 'above' && dragMode !== 'select' ? internalMode : dragMode,
-                            ...({ selections: [] } as any),
+                            dragmode: modeBar === 'above' ? internalMode : dragMode,
                             shapes: shapes ?? [],
                             autosize: true,
                             width: lockPlotWidthHeightToInputArray ? Math.min(dimensions.width, array[0].length) : dimensions.width,
@@ -341,7 +336,6 @@ export default function PlotlyHeatmap({
                             },
                         }}
                         config={{ responsive: true, displayModeBar: modeBar === 'above' ? false : 'hover' }}
-                        onSelected={(event) => { onSelected?.(event); onDragModeChange?.(internalMode); }}
                         onRelayout={handleRelayout}
                         className="rounded-b-md flex-1"
                     />
