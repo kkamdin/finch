@@ -1,6 +1,18 @@
 import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import Plot from 'react-plotly.js';
 import { cn } from '@/lib/utils';
+import ButtonIconOnly from './ButtonIconOnly';
+
+export type ModeBarRenderProps = {
+    /** Current Plotly drag mode, controlled externally via the dragMode prop */
+    dragMode: 'zoom' | 'pan' | 'select' | 'lasso' | false;
+    /** Last active zoom/pan mode — use to restore state after exiting select */
+    internalMode: 'zoom' | 'pan';
+    /** Set the active interaction mode */
+    onModeChange: (mode: 'zoom' | 'pan' | 'select') => void;
+    /** Reset the plot view to its default zoom/pan state */
+    onResetView: () => void;
+}
 
 export type PlotlyHeatmapProps = {
     /** A nested array displayed top-down */
@@ -51,6 +63,12 @@ export type PlotlyHeatmapProps = {
      * 'above': hides the native modebar and renders a compact toolbar above the plot.
      */
     modeBar?: 'overlay' | 'above';
+    /**
+     * Render prop for a fully custom toolbar. Only active when modeBar='above'.
+     * Receives current mode state and callbacks — use with ButtonIconOnly for consistent styling.
+     * When omitted, a default zoom/pan/select/reset toolbar is rendered.
+     */
+    renderModeBar?: (props: ModeBarRenderProps) => React.ReactNode;
 }
 
 //TODO: there are some issues with the display when zooming out
@@ -77,6 +95,7 @@ export default function PlotlyHeatmap({
     onDragModeChange,
     shapes,
     modeBar = 'overlay',
+    renderModeBar,
     ...props
 }: PlotlyHeatmapProps) {
     const plotContainer = useRef(null);
@@ -149,6 +168,11 @@ export default function PlotlyHeatmap({
         setScaleValue(0); // Reset slider to off
     }, []);
 
+    const handleModeChange = useCallback((mode: 'zoom' | 'pan' | 'select') => {
+        if (mode === 'zoom' || mode === 'pan') setInternalMode(mode);
+        onDragModeChange?.(mode);
+    }, [onDragModeChange]);
+
     // Hook to update dimensions of plot dynamically
     useEffect(() => {
         const resizeObserver = new ResizeObserver((entries) => {
@@ -213,54 +237,45 @@ export default function PlotlyHeatmap({
             )}
             {modeBar === 'above' && (
                 <div className="flex items-center gap-0.5 px-1 py-0.5 border-b border-slate-100">
-                    {/* Zoom */}
-                    <button
-                        title="Zoom"
-                        onClick={() => { setInternalMode('zoom'); onDragModeChange?.('zoom'); }}
-                        className={cn('p-1 rounded', dragMode === 'select'
-                            ? 'text-slate-300 pointer-events-none'
-                            : cn('hover:bg-slate-100', internalMode === 'zoom' ? 'text-sky-700' : 'text-slate-400 hover:text-slate-600')
-                        )}
-                    >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-                            <circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35M11 8v6M8 11h6"/>
-                        </svg>
-                    </button>
-                    {/* Pan */}
-                    <button
-                        title="Pan"
-                        onClick={() => { setInternalMode('pan'); onDragModeChange?.('pan'); }}
-                        className={cn('p-1 rounded', dragMode === 'select'
-                            ? 'text-slate-300 pointer-events-none'
-                            : cn('hover:bg-slate-100', internalMode === 'pan' ? 'text-sky-700' : 'text-slate-400 hover:text-slate-600')
-                        )}
-                    >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-                            <polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/>
-                            <polyline points="15 19 12 22 9 19"/><polyline points="19 9 22 12 19 15"/>
-                            <line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/>
-                        </svg>
-                    </button>
-                    {/* Select / ROI */}
-                    <button
-                        title="Draw ROI"
-                        onClick={() => onDragModeChange?.('select')}
-                        className={cn('p-1 rounded hover:bg-slate-100', dragMode === 'select' ? 'text-sky-700' : 'text-slate-400 hover:text-slate-600')}
-                    >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-                            <rect x="3" y="3" width="18" height="18" rx="1" strokeDasharray="3 3"/>
-                        </svg>
-                    </button>
-                    {/* Home / reset view */}
-                    <button
-                        title="Reset view"
-                        onClick={() => setUiRevision(r => r + 1)}
-                        className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600"
-                    >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-                            <path d="M3 12L12 3l9 9"/><path d="M9 21V12h6v9"/>
-                        </svg>
-                    </button>
+                    {renderModeBar
+                        ? renderModeBar({
+                            dragMode,
+                            internalMode,
+                            onModeChange: handleModeChange,
+                            onResetView: () => setUiRevision(r => r + 1),
+                          })
+                        : <>
+                            <ButtonIconOnly
+                                title="Zoom"
+                                isSecondary
+                                active={internalMode === 'zoom' && dragMode !== 'select'}
+                                disabled={dragMode === 'select'}
+                                onClick={() => handleModeChange('zoom')}
+                                icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35M11 8v6M8 11h6"/></svg>}
+                            />
+                            <ButtonIconOnly
+                                title="Pan"
+                                isSecondary
+                                active={internalMode === 'pan' && dragMode !== 'select'}
+                                disabled={dragMode === 'select'}
+                                onClick={() => handleModeChange('pan')}
+                                icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><polyline points="15 19 12 22 9 19"/><polyline points="19 9 22 12 19 15"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>}
+                            />
+                            <ButtonIconOnly
+                                title="Draw selection"
+                                isSecondary
+                                active={dragMode === 'select'}
+                                onClick={() => handleModeChange(dragMode === 'select' ? internalMode : 'select')}
+                                icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><rect x="3" y="3" width="18" height="18" rx="1" strokeDasharray="3 3"/></svg>}
+                            />
+                            <ButtonIconOnly
+                                title="Reset view"
+                                isSecondary
+                                onClick={() => setUiRevision(r => r + 1)}
+                                icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M3 12L12 3l9 9"/><path d="M9 21V12h6v9"/></svg>}
+                            />
+                          </>
+                    }
                 </div>
             )}
             <div className={cn(`h-full w-full rounded-b-md flex relative`, className)} ref={plotContainer} {...props}>
@@ -312,7 +327,7 @@ export default function PlotlyHeatmap({
                             },
                         }}
                         config={{ responsive: true, displayModeBar: modeBar === 'above' ? false : 'hover' }}
-                        onSelected={onSelected}
+                        onSelected={(event) => { onSelected?.(event); setUiRevision(r => r + 1); }}
                         className="rounded-b-md flex-1"
                     />
                     <div className="absolute bottom-0 left-0 right-0 text-center text-md font-semibold">
