@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import Plot from 'react-plotly.js';
 import { cn } from '@/lib/utils';
 import ButtonIconOnly from './ButtonIconOnly';
@@ -36,14 +36,10 @@ export type PlotlyHeatmapProps = {
     lockPlotWidthHeightToInputArray?: boolean,
     /** Should the color scale show up? it will take up some space to the right of the plot */
     showScale?: boolean,
-    /** Enable log scale slider control */
-    enableLogScale?: boolean,
     /** Flip y axis */
     flipYAxis?: boolean
     /** Additional CSS classes applied to the root container. */
     className?: string;
-    /** Additional CSS classes applied to the optional controller panel. */
-    classNameControls?: string;
     /** Minimum value mapped to the bottom of the colorscale. Defaults to Plotly auto-scale. */
     zmin?: number;
     /** Maximum value mapped to the top of the colorscale. Defaults to Plotly auto-scale. */
@@ -51,18 +47,14 @@ export type PlotlyHeatmapProps = {
     /** Plotly dragmode for the plot. */
     dragMode?: 'zoom' | 'pan' | false;
     /**
-     * Called when the user clicks a mode button in the toolbar (modeBar='above').
+     * Called when the user changes the interaction mode. `false` means cursor/default (no drag).
      *
-     * Why onSelected is not exposed: react-plotly.js provides an onSelected prop (the underlying
-     * plotly_selected event) for box-select ROI drawing, but Plotly owns the selection handles in
-     * the DOM and there is no supported way to clear them from a React component without importing
-     * plotly.js directly alongside react-plotly.js (which causes duplicate bundle weight and
-     * Node.js shim issues in browser builds). If you need ROI selection, use PlotlyHeatmap when
-     * Plotly's built-in zoom/pan interactions are sufficient and ROI state lives entirely inside
-     * Plotly. Use a canvas-based component when your app owns the ROI state and needs to drive
-     * what is drawn — Plotly and the caller will fight over the DOM otherwise.
+     * Note: `onSelected` (Plotly's box-select ROI event) is intentionally not exposed here.
+     * Plotly owns the selection handles in the DOM and there is no supported way to clear them
+     * from a React component without importing plotly.js directly alongside react-plotly.js
+     * (duplicate bundle weight + Node.js shim issues). If you need ROI selection, use a
+     * canvas-based component where your app owns the ROI state entirely.
      */
-    /** Called when the user changes the interaction mode. `false` means cursor/default (no drag). */
     onDragModeChange?: (mode: 'zoom' | 'pan' | false) => void;
     /** Plotly shape objects drawn on top of the heatmap in data coordinates. */
     shapes?: any[];
@@ -84,27 +76,29 @@ export type PlotlyHeatmapProps = {
 export function DefaultModeBar({ dragMode, onModeChange, onResetView }: ModeBarRenderProps) {
     return (
         <>
-            <ButtonIconOnly
-                title="Cursor"
-                isSecondary
-                active={dragMode === false}
-                onClick={() => onModeChange(false)}
-                icon={<Cursor size={16} />}
-            />
-            <ButtonIconOnly
-                title="Zoom"
-                isSecondary
-                active={dragMode === 'zoom'}
-                onClick={() => onModeChange('zoom')}
-                icon={<MagnifyingGlassPlus size={16} />}
-            />
-            <ButtonIconOnly
-                title="Pan"
-                isSecondary
-                active={dragMode === 'pan'}
-                onClick={() => onModeChange('pan')}
-                icon={<ArrowsOutCardinal size={16} />}
-            />
+            <div role="radiogroup" aria-label="Interaction mode" className="flex gap-0.5">
+                <ButtonIconOnly
+                    title="Cursor"
+                    isSecondary
+                    active={dragMode === false}
+                    onClick={() => onModeChange(false)}
+                    icon={<Cursor size={16} />}
+                />
+                <ButtonIconOnly
+                    title="Zoom"
+                    isSecondary
+                    active={dragMode === 'zoom'}
+                    onClick={() => onModeChange('zoom')}
+                    icon={<MagnifyingGlassPlus size={16} />}
+                />
+                <ButtonIconOnly
+                    title="Pan"
+                    isSecondary
+                    active={dragMode === 'pan'}
+                    onClick={() => onModeChange('pan')}
+                    icon={<ArrowsOutCardinal size={16} />}
+                />
+            </div>
             <ButtonIconOnly
                 title="Reset view"
                 isSecondary
@@ -116,12 +110,18 @@ export function DefaultModeBar({ dragMode, onModeChange, onResetView }: ModeBarR
 }
 
 /**
- * A 2D heatmap rendered with Plotly. Supports zoom/pan, colorscales, log/gamma
- * intensity scaling, optional axis labels, and a customisable toolbar.
+ * A 2D heatmap rendered with Plotly. Supports zoom/pan, colorscales,
+ * optional axis labels, and a customisable toolbar.
  *
  * The component fills its parent container. Give the parent an explicit height
  * (e.g. `h-96`) or use `lockPlotHeightToParent` to match the container's height,
  * or rely on `verticalScaleFactor` to derive height from the array row count.
+ *
+ * `onSelected` (Plotly's box-select ROI event) is intentionally not exposed.
+ * Plotly owns the selection handles in the DOM and there is no supported way to clear
+ * them from a React component without importing plotly.js directly alongside
+ * react-plotly.js (duplicate bundle weight + Node.js shim issues). If you need ROI
+ * selection, use a canvas-based component where your app owns the ROI state entirely.
  */
 export default function PlotlyHeatmap({
     array,
@@ -135,10 +135,8 @@ export default function PlotlyHeatmap({
     showScale = true,
     lockPlotHeightToParent=false,
     lockPlotWidthHeightToInputArray=false,
-    enableLogScale = false,
     flipYAxis = true,
     className,
-    classNameControls,
     zmin,
     zmax,
     dragMode = 'zoom',
@@ -149,9 +147,6 @@ export default function PlotlyHeatmap({
 }: PlotlyHeatmapProps) {
     const plotContainer = useRef(null);
     const [dimensions, setDimensions] = useState({ width: 0, height: 0 }); //applied to plot, not the container
-    const [scaleValue, setScaleValue] = useState<number>(0); // 0 = no scale, 1-10 = increasing scale intensity
-    const [debouncedScale, setDebouncedScale] = useState<number>(0);
-    const [scaleType, setScaleType] = useState<'log' | 'gamma'>('log'); // Current scale type
     // Internal zoom/pan/cursor state used when modeBar='above'. false = cursor (no drag).
     const [internalMode, setInternalMode] = useState<'zoom' | 'pan' | false>(false);
     // Explicit zoom ranges captured from onRelayout. Empty = use defaults. Cleared by reset view.
@@ -170,72 +165,11 @@ export default function PlotlyHeatmap({
         }
     }, []);
 
-    // Debounce the scale value to prevent excessive re-renders
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setDebouncedScale(scaleValue);
-        }, 300); // 300ms debounce
-
-        return () => clearTimeout(timer);
-    }, [scaleValue]);
-
-    // Apply scaling to the data based on current scale type
-    const processedArray = useMemo(() => {
-        if (!enableLogScale || debouncedScale === 0) {
-            return array;
-        }
-
-        if (scaleType === 'log') {
-            // Apply log transformation with a base that increases with slider value
-            const logBase = 1 + (debouncedScale / 10); // Base ranges from 1.1 to 2.0
-            
-            return array.map(row => 
-                row.map(value => {
-                    // Add small epsilon to avoid log(0), then apply log transformation
-                    const safeValue = Math.max(value, 0.001);
-                    return Math.log(safeValue) / Math.log(logBase);
-                })
-            );
-        } else {
-            // Apply gamma correction
-            const gamma = 0.1 + (debouncedScale / 10) * 2.9; // Gamma ranges from 0.1 to 3.0
-            
-            // Find max value efficiently without spread operator
-            let maxValue = 0;
-            for (const row of array) {
-                for (const value of row) {
-                    if (value > maxValue) {
-                        maxValue = value;
-                    }
-                }
-            }
-            
-            return array.map(row =>
-                row.map(value => {
-                    // Normalize to 0-1, apply gamma, then scale back
-                    const normalized = maxValue > 0 ? value / maxValue : 0;
-                    const gammaCorrected = Math.pow(normalized, gamma);
-                    return gammaCorrected * maxValue;
-                })
-            );
-        }
-    }, [array, debouncedScale, enableLogScale, scaleType]);
-
-    const handleScaleChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-        setScaleValue(Number(event.target.value));
-    }, []);
-
-    const handleScaleTypeChange = useCallback((newType: 'log' | 'gamma') => {
-        setScaleType(newType);
-        setScaleValue(0); // Reset slider to off
-    }, []);
-
     const handleModeChange = useCallback((mode: 'zoom' | 'pan' | false) => {
         setInternalMode(mode);
         onDragModeChange?.(mode);
     }, [onDragModeChange]);
 
-    // Hook to update dimensions of plot dynamically
     useEffect(() => {
         const resizeObserver = new ResizeObserver((entries) => {
             if (entries[0]) {
@@ -249,56 +183,12 @@ export default function PlotlyHeatmap({
         return () => resizeObserver.disconnect();
     }, []);
 
-    // Calculate the height based on the number of rows in the array
-    const dynamicHeight = Math.max(array.length * verticalScaleFactor, 0); // Minimum height is 200px
+    const dynamicHeight = Math.max(array.length * verticalScaleFactor, 0);
 
     return (
         <>
-            {enableLogScale && (
-                <div className={cn("flex items-center justify-center gap-2 p-2 rounded-t-md mb-1", classNameControls)}>
-                    <div className="flex items-center gap-2 ">
-                        <button
-                            onClick={() => handleScaleTypeChange('log')}
-                            className={`px-2 py-1 text-xs font-medium  ${
-                                scaleType === 'log' 
-                                    ? 'text-sky-800 border-b border-b-sky-800 hover:cursor-default' 
-                                    : 'text-slate-400 hover:text-sky-800'
-                            }`}
-                        >
-                            Log Scale
-                        </button>
-                        <button
-                            onClick={() => handleScaleTypeChange('gamma')}
-                            className={`px-2 py-1 text-xs font-medium ${
-                                scaleType === 'gamma' 
-                                    ? 'text-sky-800 border-b border-b-sky-800 hover:cursor-default' 
-                                    : 'text-slate-400 hover:text-sky-800'
-                            }`}
-                        >
-                            Gamma Scale
-                        </button>
-                    </div>
-                    <div className="flex items-center gap-3 justify-center ">
-                        <span className="text-xs text-gray-600">Off</span>
-                        <input
-                            type="range"
-                            min="0"
-                            max="10"
-                            step="0.5"
-                            value={scaleValue}
-                            onChange={handleScaleChange}
-                            className="flex-1 max-w-24"
-                            title={`${scaleType === 'log' ? 'Log' : 'Gamma'} Scale: ${scaleValue}`}
-                        />
-                        <span className="text-xs text-gray-600">Max</span>
-                    </div>
-                    <div className="text-xs text-gray-600 min-w-8">
-                        {scaleValue === 0 ? '' : `(${scaleValue.toFixed(1)})`}
-                    </div>
-                </div>
-            )}
             {modeBar === 'above' && (
-                <div className="flex items-center gap-0.5 px-1 py-0.5 border-b border-slate-100">
+                <div className="flex items-center gap-0.5 px-1 py-0.5 border-b border-slate-200">
                     {renderModeBar
                         ? renderModeBar({
                             dragMode,
@@ -318,7 +208,7 @@ export default function PlotlyHeatmap({
                     <Plot
                         data={[
                             {
-                                z: processedArray,
+                                z: array,
                                 type: 'heatmap',
                                 colorscale: colorScale,
                                 zmin: zmin,

@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 
-import PlotlyHeatmap from '../components/PlotlyHeatmap';
+import PlotlyHeatmap, { DefaultModeBar } from '../components/PlotlyHeatmap';
+import type { ModeBarRenderProps } from '../components/PlotlyHeatmap';
 
 const meta = {
     title: 'General Components/PlotlyHeatmap',
@@ -97,21 +98,6 @@ export const Labels: Story = {
     },
 };
 
-export const LogScale: Story = {
-    parameters: {
-        docs: {
-            description: {
-                story: 'Enable `enableLogScale` to show a log/gamma intensity slider above the plot, useful for data with a wide dynamic range.',
-            },
-        },
-    },
-    args: {
-        array: eggData,
-        lockPlotHeightToParent: true,
-        enableLogScale: true,
-    },
-};
-
 export const ModeBarAbove: Story = {
     parameters: {
         docs: {
@@ -126,3 +112,35 @@ export const ModeBarAbove: Story = {
         modeBar: 'above',
     },
 };
+
+export const ModeBarCustom: Story = {
+    parameters: {
+        docs: {
+            description: {
+                story: 'Use `renderModeBar` to supply a fully custom toolbar. `DefaultModeBar` can be composed inside your render prop so you keep the built-in buttons and add your own alongside them.',
+            },
+        },
+    },
+    render: (args) => {
+        const [dragMode, setDragMode] = useState<'zoom' | 'pan' | false>(false);
+        return (
+            <PlotlyHeatmap
+                {...args}
+                dragMode={dragMode}
+                onDragModeChange={setDragMode}
+                renderModeBar={(props: ModeBarRenderProps) => (
+                    <>
+                        <DefaultModeBar {...props} />
+                        <span className="text-xs text-slate-500 px-2 self-center">custom toolbar</span>
+                    </>
+                )}
+            />
+        );
+    },
+    args: {
+        array: eggData,
+        lockPlotHeightToParent: true,
+        modeBar: 'above',
+    },
+};
+

@@ -51,7 +51,7 @@ export type { CameraCanvasProps } from './components/Camera/CameraCanvas';
 export {default as Widget} from './components/Widget';
 export type {WidgetProps} from './components/Widget';
 
-export { default as PlotlyHeatmap } from './components/PlotlyHeatmap';
+export { default as PlotlyHeatmap, DefaultModeBar } from './components/PlotlyHeatmap';
 export type { PlotlyHeatmapProps, ModeBarRenderProps } from './components/PlotlyHeatmap';
 
 export { default as PlotlyScatter } from './components/PlotlyScatter';
