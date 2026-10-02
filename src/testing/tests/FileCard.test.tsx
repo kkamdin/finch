@@ -119,4 +119,20 @@ describe('FileCard', () => {
     const { container } = render(<FileCard filename="f.h5" />)
     expect(container.firstChild).toBeInTheDocument()
   })
+
+  it('renders the adornment when provided', () => {
+    render(<FileCard filename="f.h5" adornment={<span aria-label="job status: running" />} />)
+    expect(screen.getByLabelText('job status: running')).toBeInTheDocument()
+    expect(screen.getByTestId('filecard-adornment')).toBeInTheDocument()
+  })
+
+  it('renders no adornment container when adornment is omitted', () => {
+    render(<FileCard filename="f.h5" />)
+    expect(screen.queryByTestId('filecard-adornment')).not.toBeInTheDocument()
+  })
+
+  it('renders the adornment inside the card button so the whole card stays one click target', () => {
+    render(<FileCard filename="f.h5" adornment={<span aria-label="status dot" />} />)
+    expect(screen.getByRole('button')).toContainElement(screen.getByLabelText('status dot'))
+  })
 })

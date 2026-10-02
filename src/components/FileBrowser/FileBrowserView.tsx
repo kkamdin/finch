@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, type ReactNode } from 'react'
 import { Folder, MagnifyingGlass } from '@phosphor-icons/react'
 import FileCard, { iconSlotClasses, type IconSize } from './FileCard'
 import { cn } from '../../lib/utils'
@@ -73,6 +73,13 @@ export type FileBrowserViewProps = {
   onFileClick: (name: string) => void
   /** Ref callback to attach the IntersectionObserver to each observable card element. */
   observeCard: (node: HTMLLIElement | null) => void
+  /**
+   * Optional render function for a per-file element at the right edge of each card
+   * (passed to `FileCard` as `adornment`), e.g. a status indicator. Called with the
+   * file's full relative path — the same path passed to `getCardInfo` / `onLoadFile`.
+   * Return null for no adornment. Must not return interactive elements (see `FileCard`).
+   */
+  renderCardAdornment?: (path: string) => ReactNode
   /** Additional Tailwind classes applied to the root container. Use to override the default width. */
   className?: string
 }
@@ -110,7 +117,7 @@ export type FileBrowserViewProps = {
 export default function FileBrowserView({
   path, listing, navigating, navError, activeFile, cardInfo,
   rootLabel = 'root', showIcon = true, iconSize = 'md', filterFn,
-  onNavigate, onFileClick, observeCard, className,
+  onNavigate, onFileClick, observeCard, renderCardAdornment, className,
 }: FileBrowserViewProps) {
   const parts = path ? path.split('/').filter(Boolean) : []
 
@@ -258,6 +265,7 @@ export default function FileBrowserView({
                   iconSize={iconSize}
                   isActive={isActive}
                   onClick={() => onFileClick(name)}
+                  adornment={renderCardAdornment?.(fullPath)}
                 />
               </li>
             )
