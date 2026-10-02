@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react'
 import FileBrowserView, { type CardInfo, type DirectoryListing } from './FileBrowserView'
 
 // Navigation root vs. rootLabel — why they're different things:
@@ -57,6 +57,13 @@ export type FileBrowserProps = {
    * transferring images larger than the display slot.
    */
   iconSize?: 'sm' | 'md' | 'lg'
+  /**
+   * Optional render function for a per-file element at the right edge of each card,
+   * e.g. a status indicator. Called with the file's full relative path (the same path
+   * passed to `getCardInfo` / `onLoadFile`); return null for no adornment. The result is
+   * rendered inside the card's button, so it must not contain interactive elements.
+   */
+  renderCardAdornment?: (path: string) => ReactNode
   /** Additional Tailwind classes applied to the root container. Use to override the default width. */
   className?: string
 }
@@ -84,7 +91,7 @@ export type FileBrowserProps = {
  */
 export default function FileBrowser({
   listDirectory, getCardInfo, onLoadFile, onCardInfoError,
-  rootLabel = 'root', showIcon = true, iconSize = 'md', className,
+  rootLabel = 'root', showIcon = true, iconSize = 'md', renderCardAdornment, className,
 }: FileBrowserProps) {
   const [path, setPath] = useState('')
   const [listing, setListing] = useState<DirectoryListing | null>(null)
@@ -179,6 +186,7 @@ export default function FileBrowser({
       onNavigate={navigate}
       onFileClick={handleFileClick}
       observeCard={observeCard}
+      renderCardAdornment={renderCardAdornment}
     />
   )
 }

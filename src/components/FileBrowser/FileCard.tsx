@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { File } from '@phosphor-icons/react'
 import { cn } from '../../lib/utils'
 
@@ -37,6 +38,14 @@ export type FileCardProps = {
   isActive?: boolean
   /** Callback fired when the card is clicked. */
   onClick?: () => void
+  /**
+   * Optional element rendered at the right edge of the card, vertically centered —
+   * e.g. a status indicator supplied by the consuming app. Nothing is rendered when omitted.
+   *
+   * Rendered inside the card's `<button>`, so it must not contain interactive elements
+   * (buttons, links, inputs); use a `title` / `aria-label` for details instead.
+   */
+  adornment?: ReactNode
   /** Additional Tailwind classes applied to the root button element. */
   className?: string
 }
@@ -68,7 +77,7 @@ const iconPixelSizes: Record<IconSize, number> = {
  */
 export default function FileCard({
   filename, tag, subtitle, detail, thumbnail, error,
-  showIcon = true, iconSize = 'md', isActive, onClick, className,
+  showIcon = true, iconSize = 'md', isActive, onClick, adornment, className,
 }: FileCardProps) {
   const variant = isActive ? 'active' : 'default'
   return (
@@ -117,6 +126,11 @@ export default function FileCard({
             </>
         }
       </div>
+      {adornment != null && (
+        <div data-testid="filecard-adornment" className="shrink-0 self-center flex items-center">
+          {adornment}
+        </div>
+      )}
     </button>
   )
 }

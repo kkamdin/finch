@@ -155,3 +155,30 @@ export const LongFilename: Story = {
     subtitle: 'long name test',
   },
 };
+
+export const WithAdornment: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '`adornment` renders an app-supplied element at the right edge of the card — here a ' +
+          'status dot. It sits inside the card button, so it must be non-interactive; put details ' +
+          'in `title` / `aria-label`.',
+      },
+    },
+  },
+  args: {
+    filename: 'NS_260929001.stxm',
+    tag: 'stxm',
+    subtitle: '100 × 100 stxm scan',
+    adornment: (
+      <span
+        role="img"
+        aria-label="jobs: 1 running"
+        title="1 running"
+        className="block w-2.5 h-2.5 rounded-full bg-amber-500"
+      />
+    ),
+  },
+};
+

@@ -146,4 +146,22 @@ describe('FileBrowserView', () => {
     renderPresenter({ listing: null })
     expect(screen.queryByText('subdir')).not.toBeInTheDocument()
   })
+
+  it('calls renderCardAdornment with each file\'s full path and renders the result', () => {
+    const renderCardAdornment = vi.fn((path: string) => <span aria-label={`status for ${path}`} />)
+    renderPresenter({ path: 'data/2026', renderCardAdornment })
+    expect(renderCardAdornment).toHaveBeenCalledWith('data/2026/scan_001.h5')
+    expect(renderCardAdornment).toHaveBeenCalledWith('data/2026/scan_002.h5')
+    expect(screen.getByLabelText('status for data/2026/scan_002.h5')).toBeInTheDocument()
+  })
+
+  it('renders no adornments when renderCardAdornment is omitted', () => {
+    renderPresenter()
+    expect(screen.queryByTestId('filecard-adornment')).not.toBeInTheDocument()
+  })
+
+  it('renders no adornment for a file when renderCardAdornment returns null', () => {
+    renderPresenter({ renderCardAdornment: () => null })
+    expect(screen.queryByTestId('filecard-adornment')).not.toBeInTheDocument()
+  })
 })
